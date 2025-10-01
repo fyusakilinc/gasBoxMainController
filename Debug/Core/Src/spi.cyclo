@@ -1,3 +1,10 @@
-../Core/Src/spi.c:30:6:MX_SPI1_Init	2
-../Core/Src/spi.c:64:6:HAL_SPI_MspInit	2
-../Core/Src/spi.c:95:6:HAL_SPI_MspDeInit	2
+../Core/Src/spi.c:32:6:MX_SPI1_Init	2
+../Core/Src/spi.c:66:6:HAL_SPI_MspInit	2
+../Core/Src/spi.c:97:6:HAL_SPI_MspDeInit	2
+../Core/Src/spi.c:122:6:spiSendByte	1
+../Core/Src/spi.c:127:9:spiTransferByte	1
+../Core/Src/spi.c:137:10:spiTransferWord	1
+../Core/Src/spi.c:146:6:spi_access_device	1
+../Core/Src/spi.c:151:6:spi_release_device	1
+../Core/Src/spi.c:156:6:_spi_access_device	5
+../Core/Src/spi.c:204:6:spi_set_cs	4

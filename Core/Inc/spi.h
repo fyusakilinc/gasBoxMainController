@@ -29,7 +29,16 @@ extern "C" {
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
+#define spi_deselect_device	0
+#define spi_select_device	1
 
+#define spi_dds			0
+#define spi_dds_cs		0
+
+#define spi_mio			1
+#define spi_mio_cs		1
+
+#define spi_cs_all_off	255
 /* USER CODE END Includes */
 
 extern SPI_HandleTypeDef hspi1;
@@ -41,7 +50,11 @@ extern SPI_HandleTypeDef hspi1;
 void MX_SPI1_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+void spiSendByte(uint8_t);
+uint8_t spiTransferByte(uint8_t);
+uint16_t spiTransferWord(uint16_t);
+void spi_access_device(uint8_t);
+void spi_release_device(uint8_t);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

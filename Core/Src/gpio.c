@@ -53,7 +53,13 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, UC_PUMP_START_Pin|UC_PUMP_STOP_Pin|UC_PUMP_REMOTE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, UC_PUMP_START_Pin|UC_PUMP_STOP_Pin|UC_AUX_RESET_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(UC_CS_AUX1_GPIO_Port, UC_CS_AUX1_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(UC_CS_AUX0_GPIO_Port, UC_CS_AUX0_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, UC_CS_SPS_OUT_Pin|UC_CS_SPS_IN_Pin, GPIO_PIN_RESET);
@@ -62,17 +68,31 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(UC_HEARTBEAT_GPIO_Port, UC_HEARTBEAT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : PEPin PEPin PEPin */
-  GPIO_InitStruct.Pin = UC_PUMP_START_Pin|UC_PUMP_STOP_Pin|UC_PUMP_REMOTE_Pin;
+  GPIO_InitStruct.Pin = UC_PUMP_START_Pin|UC_PUMP_STOP_Pin|UC_AUX_RESET_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PEPin PEPin */
-  GPIO_InitStruct.Pin = UC_PUMP_WARNING_Pin|UC_PUMP_ALARM_Pin;
+  /*Configure GPIO pins : PEPin PEPin PEPin */
+  GPIO_InitStruct.Pin = UC_PUMP_WARNING_Pin|UC_PUMP_ALARM_Pin|UC_PUMP_REMOTE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PtPin */
+  GPIO_InitStruct.Pin = UC_CS_AUX1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(UC_CS_AUX1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PtPin */
+  GPIO_InitStruct.Pin = UC_CS_AUX0_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(UC_CS_AUX0_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PBPin PBPin */
   GPIO_InitStruct.Pin = UC_CS_SPS_OUT_Pin|UC_CS_SPS_IN_Pin;

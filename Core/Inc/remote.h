@@ -32,4 +32,3 @@ void output_binary_result(stack_item *cmd);
 uint8_t remote_ascii_verbose(void);
 
 uint8_t remote_ascii_crlf(void);
-

@@ -6,7 +6,6 @@
 #include "protocoll.h"
 #include "stacks.h"
 #include "resultqueue.h"
-#include "func_binarypro.h"
 #include "zentrale.h"
 #include "cmdlist.h"
 #include "SG_global.h"
@@ -52,9 +51,6 @@ static uint8_t lengthRx = 0;
 static uint8_t dleFlag = 0;
 static uint8_t checksum = 0;
 
-// last parsed reply + ready flag
-static volatile uint8_t reply_ready = 0;
-static GbReply last_reply;
 static void parse_binary_gasbox(void);
 void gb_on_frame(uint8_t cmd, uint8_t status, uint16_t value);
 
@@ -181,14 +177,6 @@ static void parse_binary_gasbox(void) {
 }
 
 
-bool remote_try_get_reply(GbReply *out) {
-	if (!reply_ready)
-		return false;
-	*out = last_reply;
-	reply_ready = 0;
-	return true;
-}
-
 static inline uint8_t gb_sum8(const uint8_t *p, int n){
     uint32_t s = 0;
     for (int i=0; i<n; ++i) s += p[i];
@@ -198,12 +186,6 @@ static inline uint8_t gb_sum8(const uint8_t *p, int n){
 static inline void gb_push_escaped(uint8_t **wp, uint8_t b){
     *(*wp)++ = b;
     if (b == GB_DLE) *(*wp)++ = b;  // double any DLE in-band
-}
-
-
-static inline void gb_flush_rx(void) {
-	while (rb_rx_used(&uart4_rb))
-		(void) uartRB_Getc(&uart4_rb);
 }
 
 /**
@@ -278,7 +260,7 @@ uint8_t gasbox_xfer(uint8_t cmd, uint16_t param, GbReply *out, uint32_t timeout_
             gb_sync.waiting = 0;
             return 0;
         }
-        // do NOT call gb_sero_get() here; main loop owns it, so unsolicited frames still work
+        // do NOT call gb_sero_get() here; main loop owns it
     }
     *out = gb_sync.r;
     return 1;

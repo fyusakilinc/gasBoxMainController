@@ -2,3 +2,4 @@
 ../Core/Src/func.c:12:6:delay_ms	16	static
 ../Core/Src/func.c:17:10:rmult	16	static
 ../Core/Src/func.c:22:9:chk_crc	16	static
+../Core/Src/func.c:30:10:clamp16	16	static

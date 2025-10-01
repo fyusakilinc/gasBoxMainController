@@ -8,5 +8,6 @@ typedef struct {
 } GbReply;
 
 
+
 uint8_t gasbox_send(uint8_t cmd, uint16_t param);
 uint8_t gasbox_xfer(uint8_t cmd, uint16_t param, GbReply *out, uint32_t timeout_ms);

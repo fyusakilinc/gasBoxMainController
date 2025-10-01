@@ -12,3 +12,5 @@ uint32_t rmult(uint16_t, uint16_t, uint8_t);
 
 // Pruefsummentest
 uint8_t chk_crc(uint8_t, uint8_t);
+
+uint16_t clamp16(int32_t);

@@ -8,6 +8,7 @@
 #include "hardware.h"
 #include "protocoll.h"
 #include "SG_global.h"
+#include "gasbox.h"
 
 //-----------------PRIVATE-BEREICH---------------------------------------------
 
@@ -19,16 +20,10 @@ static uint16_t z_error_kum;                        // kumulierte Fehler
 static uint8_t z_init_done = 0;
 static uint8_t z_rf_state = 0;
 
-static uint8_t z_remote_mode = 1;
 
 //static uint8_t current_profile = 0;
 
 //static uint8_t apply_mode = 0;
-
-static int32_t chan1_phase = 0, chan2_phase = 0, chan3_phase = 0, chan4_phase =
-		0;
-static int32_t chan1_amplitude = 0, chan2_amplitude = 0, chan3_amplitude = 0,
-		chan4_amplitude = 0;
 
 const int32_t min_amplitude = 0;
 const int32_t max_amplitude = 1023;
@@ -180,14 +175,6 @@ void zentrale(void) {	// ----- DENKEN -----
 
 }
 
-// z_status zurückgeben.
-uint8_t z_get_initok(void) {
-	return z_init_done;
-}
-
-uint8_t z_get_opm(void) {
-	return z_status;
-}
 
 // Statuswunsch setzen
 // Priorität:   error, inactive, start, active
@@ -220,418 +207,45 @@ uint8_t z_reset(void) {
 	return CMR_SUCCESSFULL;
 }
 
-int32_t z_get_remote_mode(void) {
-	return z_remote_mode;
+
+uint8_t z_mfc_set(uint8_t idx, uint16_t val) {
+    GbReply r;
+    return gasbox_xfer(kMfc[idx].cmd_set, val, &r, GB_TIMEOUT_MS) && (r.status == GB_STATUS_OK);
+}
+uint8_t z_mfc_get(uint8_t idx, uint16_t *out) {
+    GbReply r;
+    if (!gasbox_xfer(kMfc[idx].cmd_get, 0, &r, GB_TIMEOUT_MS) || r.status != GB_STATUS_OK) return 0;
+    *out = r.value; return 1;
+}
+uint8_t z_mfc_close(uint8_t idx) {
+    GbReply r;
+    return gasbox_xfer(kMfc[idx].cmd_close, 0, &r, GB_TIMEOUT_MS) && (r.status == GB_STATUS_OK);
 }
 
-uint8_t z_chk_remote_mode(uint8_t md) {
-	if (md == z_remote_mode)
-		return 1;
-	else
-		return 0;
+static inline uint8_t gb_do(uint8_t cmd, uint16_t param) {
+    GbReply r;
+    return gasbox_xfer(cmd, param, &r, GB_TIMEOUT_MS) && (r.status == GB_STATUS_OK);
 }
 
-uint8_t z_set_remote_mode(uint8_t opmode) {
-	switch (opmode) {
-	case z_rmt_off:
-		z_remote_mode = z_rmt_off;
-		return CMR_SUCCESSFULL;
-		break;
-
-	case z_rmt_rs232:
-		z_remote_mode = z_rmt_rs232;
-		return CMR_SUCCESSFULL;
-		break;
-
-	default:
-		return CMR_PARAMETERINVALID;
-		break;
-	}
+static inline uint8_t gb_get16(uint8_t cmd, uint16_t *out) {
+    GbReply r;
+    if (!gasbox_xfer(cmd, 0, &r, GB_TIMEOUT_MS) || r.status != GB_STATUS_OK) return 0;
+    *out = r.value; return 1;
 }
 
-uint8_t z_set_rf(uint8_t x) {
-	uint8_t retVal = CMR_SUCCESSFULL;
-	switch (x) {
-	case 0:
-		z_set_status_tend(INACTIVE);
-//            z_rf_state = 0;
-		break;
-	case 1:
-		z_set_status_tend(ACTIVE);
-//            z_rf_state = 1;
-		break;
-	default:
-		retVal = CMR_PARAMETERINVALID;
-	}
-
-	return retVal;
+uint8_t z_valve_open(uint8_t idx)  {
+	return gb_do(idx==3 ? GB_CMD_VALVE3_OPEN  : GB_CMD_VALVE4_OPEN, 0);
 }
-
-uint8_t z_get_rf(void) {
-	return z_rf_state;
+uint8_t z_valve_close(uint8_t idx) {
+	return gb_do(idx==3 ? GB_CMD_VALVE3_CLOSE : GB_CMD_VALVE4_CLOSE, 0);
 }
-
-int32_t z_get_pf_a(void) {
-	if (z_rf_state == 0)
-		return 0;
-	else
-		return 1;//get_lcd1234Val_filt(PF1);
+uint8_t z_valve_get(uint8_t idx, uint16_t *state) {
+    return gb_get16(idx==3 ? GB_CMD_VALVE3_GET : GB_CMD_VALVE4_GET, state);
 }
-
-int32_t z_get_pr_a(void) {
-	if (z_rf_state == 0)
-		return 0;
-	else
-		return 1;//get_lcd1234Val_filt(PR1);
+uint8_t z_gb_err_clr(){
+	return gb_do(GB_CMD_CLR_ERR, 0) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 }
-
-int32_t z_get_pf_b(void) {
-	if (z_rf_state == 0)
-		return 0;
-	else
-		return 1;//get_lcd1234Val_filt(PF2);
-}
-
-int32_t z_get_pr_b(void) {
-	if (z_rf_state == 0)
-		return 0;
-	else
-		return 1;//get_lcd1234Val_filt(PR2);
-}
-
-int32_t z_get_pf_c(void) {
-	if (z_rf_state == 0)
-		return 0;
-	else
-		return 1;//get_lcd1234Val_filt(PF3);
-}
-
-int32_t z_get_pr_c(void) {
-	if (z_rf_state == 0)
-		return 0;
-	else
-		return 1;//get_lcd1234Val_filt(PR3);
-}
-
-int32_t z_get_pf_d(void) {
-	if (z_rf_state == 0)
-		return 0;
-	else
-		return 1;//get_lcd1234Val_filt(PF4);
-}
-
-int32_t z_get_pr_d(void) {
-	if (z_rf_state == 0)
-		return 0;
-	else
-		return 1;//get_lcd1234Val_filt(PR4);
-}
-
-uint8_t z_set_a_ampphase(uint32_t val) {
-	int32_t tmp_phase = val & 0x0000FFFF;
-	int32_t tmp_amplitude = (val & 0xFFFF0000) >> 16;
-
-	uint8_t retVal = CMR_SUCCESSFULL;
-
-	if (tmp_phase < min_phase) {
-		retVal = CMR_PARAMETERADJUSTED;
-		chan1_phase = min_phase;
-	} else if (tmp_phase > max_phase) {
-		retVal = CMR_PARAMETERADJUSTED;
-		chan1_phase = max_phase;
-	} else {
-		chan1_phase = tmp_phase;
-	}
-
-	if (tmp_amplitude < min_amplitude) {
-		retVal = CMR_PARAMETERADJUSTED;
-		chan1_amplitude = min_amplitude;
-	} else if (tmp_amplitude > max_amplitude) {
-		retVal = CMR_PARAMETERADJUSTED;
-		chan1_amplitude = max_amplitude;
-	} else {
-		chan1_amplitude = tmp_amplitude;
-	}
-
-	//dds_set_cpow_x(chan1_phase, 1);
-	//dds_set_amp_x(chan1_amplitude, 1);
-	//dds_apply();
-
-	return retVal;
-}
-
-uint8_t z_set_b_ampphase(uint32_t val) {
-	int32_t tmp_phase = val & 0x0000FFFF;
-	int32_t tmp_amplitude = (val & 0xFFFF0000) >> 16;
-
-	uint8_t retVal = CMR_SUCCESSFULL;
-
-	if (tmp_phase < min_phase) {
-		retVal = CMR_PARAMETERADJUSTED;
-		chan2_phase = min_phase;
-	} else if (tmp_phase > max_phase) {
-		retVal = CMR_PARAMETERADJUSTED;
-		chan2_phase = max_phase;
-	} else {
-		chan2_phase = tmp_phase;
-	}
-
-	if (tmp_amplitude < min_amplitude) {
-		retVal = CMR_PARAMETERADJUSTED;
-		chan2_amplitude = min_amplitude;
-	} else if (tmp_amplitude > max_amplitude) {
-		retVal = CMR_PARAMETERADJUSTED;
-		chan2_amplitude = max_amplitude;
-	} else {
-		chan2_amplitude = tmp_amplitude;
-	}
-
-	//dds_set_cpow_x(chan2_phase, 2);
-	//dds_set_amp_x(chan2_amplitude, 2);
-	//dds_apply();
-
-	return retVal;
-}
-
-uint8_t z_set_c_ampphase(uint32_t val) {
-	int32_t tmp_phase = val & 0x0000FFFF;
-	int32_t tmp_amplitude = (val & 0xFFFF0000) >> 16;
-
-	uint8_t retVal = CMR_SUCCESSFULL;
-
-	if (tmp_phase < min_phase) {
-		retVal = CMR_PARAMETERADJUSTED;
-		chan3_phase = min_phase;
-	} else if (tmp_phase > max_phase) {
-		retVal = CMR_PARAMETERADJUSTED;
-		chan3_phase = max_phase;
-	} else {
-		chan3_phase = tmp_phase;
-	}
-
-	if (tmp_amplitude < min_amplitude) {
-		retVal = CMR_PARAMETERADJUSTED;
-		chan3_amplitude = min_amplitude;
-	} else if (tmp_amplitude > max_amplitude) {
-		retVal = CMR_PARAMETERADJUSTED;
-		chan3_amplitude = max_amplitude;
-	} else {
-		chan3_amplitude = tmp_amplitude;
-	}
-
-	//dds_set_cpow_x(chan3_phase, 3);
-	//dds_set_amp_x(chan3_amplitude, 3);
-	//dds_apply();
-
-	return retVal;
-}
-
-uint8_t z_set_d_ampphase(uint32_t val) {
-	int32_t tmp_phase = val & 0x0000FFFF;
-	int32_t tmp_amplitude = (val & 0xFFFF0000) >> 16;
-
-	uint8_t retVal = CMR_SUCCESSFULL;
-
-	if (tmp_phase < min_phase) {
-		retVal = CMR_PARAMETERADJUSTED;
-		chan4_phase = min_phase;
-	} else if (tmp_phase > max_phase) {
-		retVal = CMR_PARAMETERADJUSTED;
-		chan4_phase = max_phase;
-	} else {
-		chan4_phase = tmp_phase;
-	}
-
-	if (tmp_amplitude < min_amplitude) {
-		retVal = CMR_PARAMETERADJUSTED;
-		chan4_amplitude = min_amplitude;
-	} else if (tmp_amplitude > max_amplitude) {
-		retVal = CMR_PARAMETERADJUSTED;
-		chan4_amplitude = max_amplitude;
-	} else {
-		chan4_amplitude = tmp_amplitude;
-	}
-
-	//dds_set_cpow_x(chan4_phase, 4);
-	//dds_set_amp_x(chan4_amplitude, 4);
-	//dds_apply();
-
-	return retVal;
-}
-
-uint8_t z_set_amp_a(int32_t val) {
-	uint8_t retVal = CMR_SUCCESSFULL;
-
-	if (val < min_amplitude) {
-		retVal = CMR_PARAMETERCLIPEDMIN;
-		chan1_amplitude = min_amplitude;
-	} else if (val > max_amplitude) {
-		retVal = CMR_PARAMETERCLIPEDMAX;
-		chan1_amplitude = max_amplitude;
-	} else {
-		chan1_amplitude = val;
-	}
-	//dds_set_amp_x(chan1_amplitude, 1);
-
-	return retVal;
-}
-
-int32_t z_get_amp_a(void) {
-	return chan1_amplitude;
-}
-
-uint8_t z_set_amp_b(int32_t val) {
-	uint8_t retVal = CMR_SUCCESSFULL;
-
-	if (val < min_amplitude) {
-		retVal = CMR_PARAMETERCLIPEDMIN;
-		chan2_amplitude = min_amplitude;
-	} else if (val > max_amplitude) {
-		retVal = CMR_PARAMETERCLIPEDMAX;
-		chan2_amplitude = max_amplitude;
-	} else {
-		chan2_amplitude = val;
-	}
-	//dds_set_amp_x(chan2_amplitude, 2);
-
-	return retVal;
-}
-
-int32_t z_get_amp_b(void) {
-	return chan2_amplitude;
-}
-
-uint8_t z_set_amp_c(int32_t val) {
-	uint8_t retVal = CMR_SUCCESSFULL;
-
-	if (val < min_amplitude) {
-		retVal = CMR_PARAMETERCLIPEDMIN;
-		chan3_amplitude = min_amplitude;
-	} else if (val > max_amplitude) {
-		retVal = CMR_PARAMETERCLIPEDMAX;
-		chan3_amplitude = max_amplitude;
-	} else {
-		chan3_amplitude = val;
-	}
-	//dds_set_amp_x(chan3_amplitude, 3);
-
-	return retVal;
-}
-
-int32_t z_get_amp_c(void) {
-	return chan3_amplitude;
-}
-
-uint8_t z_set_amp_d(int32_t val) {
-	uint8_t retVal = CMR_SUCCESSFULL;
-
-	if (val < min_amplitude) {
-		retVal = CMR_PARAMETERCLIPEDMIN;
-		chan4_amplitude = min_amplitude;
-	} else if (val > max_amplitude) {
-		retVal = CMR_PARAMETERCLIPEDMAX;
-		chan4_amplitude = max_amplitude;
-	} else {
-		chan4_amplitude = val;
-	}
-	//dds_set_amp_x(chan4_amplitude, 4);
-
-	return retVal;
-}
-
-int32_t z_get_amp_d(void) {
-	return chan4_amplitude;
-}
-
-uint8_t z_set_phase_a(int32_t val) {
-	uint8_t retVal = CMR_SUCCESSFULL;
-
-	if (val < min_phase) {
-		retVal = CMR_PARAMETERCLIPEDMIN;
-		chan1_phase = min_phase;
-	} else if (val > max_phase) {
-		retVal = CMR_PARAMETERCLIPEDMAX;
-		chan1_phase = max_phase;
-	} else {
-		chan1_phase = val;
-	}
-
-	//dds_set_cpow_x(chan1_phase, 1);
-	return retVal;
-}
-
-int32_t z_get_phase_a(void) {
-	return chan1_phase;
-}
-
-uint8_t z_set_phase_b(int32_t val) {
-	uint8_t retVal = CMR_SUCCESSFULL;
-
-	if (val < min_phase) {
-		retVal = CMR_PARAMETERCLIPEDMIN;
-		chan2_phase = min_phase;
-	} else if (val > max_phase) {
-		retVal = CMR_PARAMETERCLIPEDMAX;
-		chan2_phase = max_phase;
-	} else {
-		chan2_phase = val;
-	}
-
-	//dds_set_cpow_x(chan2_phase, 2);
-	return retVal;
-}
-
-int32_t z_get_phase_b(void) {
-	return chan2_phase;
-}
-
-uint8_t z_set_phase_c(int32_t val) {
-	uint8_t retVal = CMR_SUCCESSFULL;
-
-	if (val < min_phase) {
-		retVal = CMR_PARAMETERCLIPEDMIN;
-		chan3_phase = min_phase;
-	} else if (val > max_phase) {
-		retVal = CMR_PARAMETERCLIPEDMAX;
-		chan3_phase = max_phase;
-	} else {
-		chan3_phase = val;
-	}
-
-	//dds_set_cpow_x(chan3_phase, 3);
-	return retVal;
-}
-
-int32_t z_get_phase_c(void) {
-	return chan3_phase;
-}
-
-uint8_t z_set_phase_d(int32_t val) {
-	uint8_t retVal = CMR_SUCCESSFULL;
-
-	if (val < min_phase) {
-		retVal = CMR_PARAMETERCLIPEDMIN;
-		chan4_phase = min_phase;
-	} else if (val > max_phase) {
-		retVal = CMR_PARAMETERCLIPEDMAX;
-		chan4_phase = max_phase;
-	} else {
-		chan4_phase = val;
-	}
-
-	//dds_set_cpow_x(chan4_phase, 4);
-	return retVal;
-}
-
-int32_t z_get_phase_d(void) {
-	return chan4_phase;
-}
-
-uint8_t z_set_apply(void) {
-
-	uint8_t retVal = CMR_SUCCESSFULL;
-
-	//retVal = dds_apply();
-	return retVal;
+uint8_t z_gb_err_get(uint16_t *out_err) {
+    return gb_get16(GB_CMD_GET_ERR, out_err) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 }
 

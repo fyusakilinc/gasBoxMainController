@@ -26,3 +26,9 @@ uint8_t chk_crc(uint8_t val1, uint8_t val2)
 	else
 		return 0;
 }
+
+uint16_t clamp16(int32_t v) {
+    if (v < 0)      return 0u;
+    if (v > 65535)  return 65535u;
+    return (uint16_t)v;
+}

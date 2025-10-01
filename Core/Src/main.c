@@ -128,16 +128,16 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  hw_sero_get();
-	  remote_sero_get();
-	  gb_sero_get();
-	  result_get_sero();
+		hw_sero_get();
+		remote_sero_get();
+		gb_sero_get();
+		result_get_sero();
 
-	  zentrale();
+		zentrale();
 
+		result_get_sero();
 		hw_sero_set();
 		z_cmd_scheduler();
-		result_get_sero();
   }
   /* USER CODE END 3 */
 }

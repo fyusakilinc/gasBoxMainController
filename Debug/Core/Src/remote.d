@@ -32,8 +32,8 @@ Core/Src/remote.o: ../Core/Src/remote.c ../Core/Inc/remote.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart_ex.h \
  ../Core/Inc/usart.h ../Core/Inc/protocoll.h ../Core/Inc/stacks.h \
- ../Core/Inc/resultqueue.h ../Core/Inc/func_binarypro.h \
- ../Core/Inc/zentrale.h ../Core/Inc/cmdlist.h ../Core/Inc/SG_global.h
+ ../Core/Inc/resultqueue.h ../Core/Inc/zentrale.h ../Core/Inc/cmdlist.h \
+ ../Core/Inc/cmdlist.h ../Core/Inc/SG_global.h
 ../Core/Inc/remote.h:
 ../Core/Inc/SG_global.h:
 ../Core/Inc/uart4.h:
@@ -73,7 +73,7 @@ Core/Src/remote.o: ../Core/Src/remote.c ../Core/Inc/remote.h \
 ../Core/Inc/protocoll.h:
 ../Core/Inc/stacks.h:
 ../Core/Inc/resultqueue.h:
-../Core/Inc/func_binarypro.h:
 ../Core/Inc/zentrale.h:
+../Core/Inc/cmdlist.h:
 ../Core/Inc/cmdlist.h:
 ../Core/Inc/SG_global.h:

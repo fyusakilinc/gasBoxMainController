@@ -1,5 +1,6 @@
 Core/Src/zentrale.o: ../Core/Src/zentrale.c ../Core/Inc/zentrale.h \
- ../Core/Inc/main.h ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal.h \
+ ../Core/Inc/cmdlist.h ../Core/Inc/main.h \
+ ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal.h \
  ../Core/Inc/stm32g4xx_hal_conf.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_rcc.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_def.h \
@@ -31,8 +32,10 @@ Core/Src/zentrale.o: ../Core/Src/zentrale.c ../Core/Inc/zentrale.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart_ex.h \
  ../Core/Inc/uart4.h ../Core/Inc/main.h ../Core/Inc/timer0.h \
- ../Core/Inc/hardware.h ../Core/Inc/protocoll.h ../Core/Inc/SG_global.h
+ ../Core/Inc/hardware.h ../Core/Inc/protocoll.h ../Core/Inc/SG_global.h \
+ ../Core/Inc/gasbox.h
 ../Core/Inc/zentrale.h:
+../Core/Inc/cmdlist.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal.h:
 ../Core/Inc/stm32g4xx_hal_conf.h:
@@ -71,3 +74,4 @@ Core/Src/zentrale.o: ../Core/Src/zentrale.c ../Core/Inc/zentrale.h \
 ../Core/Inc/hardware.h:
 ../Core/Inc/protocoll.h:
 ../Core/Inc/SG_global.h:
+../Core/Inc/gasbox.h:

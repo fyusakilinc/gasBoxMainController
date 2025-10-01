@@ -33,8 +33,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Core/Inc/spi.h ../Core/Inc/main.h ../Core/Inc/tim.h \
  ../Core/Inc/usart.h ../Core/Inc/gpio.h ../Core/Inc/uart4.h \
  ../Core/Inc/Hardware.h ../Core/Inc/iso.h ../Core/Inc/remote.h \
- ../Core/Inc/SG_global.h ../Core/Inc/zentrale.h ../Core/Inc/timer0.h \
- ../Core/Inc/func.h ../Core/Inc/prioritylist.h \
+ ../Core/Inc/SG_global.h ../Core/Inc/zentrale.h ../Core/Inc/cmdlist.h \
+ ../Core/Inc/timer0.h ../Core/Inc/func.h ../Core/Inc/prioritylist.h \
  ../Core/Inc/priority_pushpop.h ../Core/Inc/stacks.h \
  ../Core/Inc/resultqueue.h ../Core/Inc/zentrale_cmd_sero.h \
  ../Core/Inc/gasbox.h
@@ -81,6 +81,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Inc/remote.h:
 ../Core/Inc/SG_global.h:
 ../Core/Inc/zentrale.h:
+../Core/Inc/cmdlist.h:
 ../Core/Inc/timer0.h:
 ../Core/Inc/func.h:
 ../Core/Inc/prioritylist.h:

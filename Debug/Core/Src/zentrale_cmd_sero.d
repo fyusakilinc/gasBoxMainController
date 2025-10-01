@@ -2,8 +2,8 @@ Core/Src/zentrale_cmd_sero.o: ../Core/Src/zentrale_cmd_sero.c \
  ../Core/Inc/SG_global.h ../Core/Inc/protocoll.h ../Core/Inc/cmdlist.h \
  ../Core/Inc/stacks.h ../Core/Inc/SG_global.h ../Core/Inc/prioritylist.h \
  ../Core/Inc/priority_pushpop.h ../Core/Inc/resultqueue.h \
- ../Core/Inc/zentrale.h ../Core/Inc/zentrale_cmd_sero.h \
- ../Core/Inc/uart4.h ../Core/Inc/main.h \
+ ../Core/Inc/zentrale.h ../Core/Inc/cmdlist.h \
+ ../Core/Inc/zentrale_cmd_sero.h ../Core/Inc/uart4.h ../Core/Inc/main.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal.h \
  ../Core/Inc/stm32g4xx_hal_conf.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_rcc.h \
@@ -35,7 +35,7 @@ Core/Src/zentrale_cmd_sero.o: ../Core/Src/zentrale_cmd_sero.c \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_tim_ex.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart_ex.h \
- ../Core/Inc/gasbox.h
+ ../Core/Inc/func.h ../Core/Inc/gasbox.h
 ../Core/Inc/SG_global.h:
 ../Core/Inc/protocoll.h:
 ../Core/Inc/cmdlist.h:
@@ -45,6 +45,7 @@ Core/Src/zentrale_cmd_sero.o: ../Core/Src/zentrale_cmd_sero.c \
 ../Core/Inc/priority_pushpop.h:
 ../Core/Inc/resultqueue.h:
 ../Core/Inc/zentrale.h:
+../Core/Inc/cmdlist.h:
 ../Core/Inc/zentrale_cmd_sero.h:
 ../Core/Inc/uart4.h:
 ../Core/Inc/main.h:
@@ -79,4 +80,5 @@ Core/Src/zentrale_cmd_sero.o: ../Core/Src/zentrale_cmd_sero.c \
 ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_tim_ex.h:
 ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart.h:
 ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart_ex.h:
+../Core/Inc/func.h:
 ../Core/Inc/gasbox.h:

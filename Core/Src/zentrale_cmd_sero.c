@@ -11,6 +11,7 @@
 #include "zentrale.h"
 #include "zentrale_cmd_sero.h"
 #include "uart4.h"
+#include "func.h"
 #include "gasbox.h"
 
 
@@ -25,8 +26,6 @@ void z_cmd_sero(stack_item cmd);                   //den einzelnen Befehl zu ver
 
 //--- FUNKTIONSDEKLARATIONS -------------------------------------------------------------------------------------------------
 //die Mechanimus zur Verarbeitung der Befehle mit den unterschiedlichen Prioritäten
-void z_cmd_scheduler(void);
-
 //--- FUNKTIONSDEFINITIONS --------------------------------------------------------------------------------------------------
 void z_cmd_scheduler(void)
 {
@@ -97,178 +96,127 @@ void z_cmd_scheduler(void)
 
 }
 
-void z_cmd_sero(stack_item cmd)
-{
+void z_cmd_sero(stack_item cmd) {
 
-	switch (cmd.cmd_index)
-	{
-		case CMD_SET_REM_CTL:
-			cmd.cmd_ack = z_set_remote_mode(cmd.parameter);
-			break;
-		case CMD_GET_RF:
-			cmd.parameter = z_get_rf();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_SET_RF:
-			cmd.cmd_ack = z_set_rf(cmd.parameter);
-			break;
-		case CMD_GET_REM_CTL:
-			cmd.parameter = z_get_remote_mode ();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_RESET_ERROR:
-			cmd.cmd_ack = z_reset();
-			break;
-		case CMD_GET_STATUS:
-			cmd.parameter = z_get_status();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_GET_ERR:
-			cmd.parameter = z_get_error();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_GET_A_PF:
-			cmd.parameter = z_get_pf_a();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_GET_A_PR:
-			cmd.parameter = z_get_pr_a();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_SET_A_AMPLITUDE:
-			cmd.cmd_ack = z_set_amp_a(cmd.parameter);
-			break;
-		case CMD_GET_A_AMPLITUDE:
-			cmd.parameter = z_get_amp_a();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_SET_A_PHASE:
-			cmd.cmd_ack = z_set_phase_a(cmd.parameter);
-			break;
-		case CMD_GET_A_PHASE:
-			cmd.parameter = z_get_phase_a();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_SET_A_AMPPHASE:
-			cmd.cmd_ack = z_set_a_ampphase(cmd.parameter);
-			break;
-		case CMD_GET_B_PF:
-			cmd.parameter = z_get_pf_b();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_GET_B_PR:
-			cmd.parameter = z_get_pr_b();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_SET_B_AMPLITUDE:
-			cmd.cmd_ack = z_set_amp_b(cmd.parameter);
-			break;
-		case CMD_GET_B_AMPLITUDE:
-			cmd.parameter = z_get_amp_b();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_SET_B_PHASE:
-			cmd.cmd_ack = z_set_phase_b(cmd.parameter);
-			break;
-		case CMD_GET_B_PHASE:
-			cmd.parameter = z_get_phase_b();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_SET_B_AMPPHASE:
-			cmd.cmd_ack = z_set_b_ampphase(cmd.parameter);
-			break;
-		case CMD_GET_C_PF:
-			cmd.parameter = z_get_pf_c();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_GET_C_PR:
-			cmd.parameter = z_get_pr_c();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_SET_C_AMPLITUDE:
-			cmd.cmd_ack = z_set_amp_c(cmd.parameter);
-			break;
-		case CMD_GET_C_AMPLITUDE:
-			cmd.parameter = z_get_amp_c();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_SET_C_PHASE:
-			cmd.cmd_ack = z_set_phase_c(cmd.parameter);
-			break;
-		case CMD_GET_C_PHASE:
-			cmd.parameter = z_get_phase_c();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_SET_C_AMPPHASE:
-			cmd.cmd_ack = z_set_c_ampphase(cmd.parameter);
-			break;
-		case CMD_GET_D_PF:
-			cmd.parameter = z_get_pf_d();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_GET_D_PR:
-			cmd.parameter = z_get_pr_d();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_SET_D_AMPLITUDE:
-			cmd.cmd_ack = z_set_amp_d(cmd.parameter);
-			break;
-		case CMD_GET_D_AMPLITUDE:
-			cmd.parameter = z_get_amp_d();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_SET_D_PHASE:
-			cmd.cmd_ack = z_set_phase_d(cmd.parameter);
-			break;
-		case CMD_GET_D_PHASE:
-			cmd.parameter = z_get_phase_d();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_SET_D_AMPPHASE:
-			cmd.cmd_ack = z_set_d_ampphase(cmd.parameter);
-			break;
-		case CMD_GET_MON_UDC:
-			cmd.parameter = 0;//z_get_u_act_lcd();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_SET_APPLY:
-			cmd.cmd_ack = z_set_apply();
-			break;
-		case CMD_GET_MON_T1:
-			cmd.parameter = 1;//z_get_t1_act_lcd();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
-		case CMD_GET_MON_T2:
-			cmd.parameter = 1;//z_get_t2_act_lcd();
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-			break;
+	switch (cmd.cmd_index) {
 
-		case CMD_FLOW1_SET:
-		    //if (!has_param) return CMR_PARAMETERINVALID;
-		    //uint16_t code = (val < 0) ? 0 : (val > 65535 ? 65535 : (uint16_t)val);
-		    //GbReply r;
-		    //if (gasbox_xfer(GB_CMD_SET_DAC0, code, &r, 200) && r.status == 0x80) {
-		        // tell PC it's OK (use your existing OK path)
-		        //output_ascii_cmdack(CMR_SUCCESSFULL);         // or queue an OK
-		        //return CMR_SUCCESSFULL;
-		    //}
-			cmd.cmd_ack = CMR_SUCCESSFULL; // or a better error code you use for comms/timeout
-		    break;
+	// MFC1..MFC4 SET
+	case CMD_MFC1_SET: {
+		uint16_t p = clamp16(cmd.parameter);
+		cmd.cmd_ack = z_mfc_set(0, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+	case CMD_MFC2_SET: {
+		uint16_t p = clamp16(cmd.parameter);
+		cmd.cmd_ack = z_mfc_set(1, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+	case CMD_MFC3_SET: {
+		uint16_t p = clamp16(cmd.parameter);
+		cmd.cmd_ack = z_mfc_set(2, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+	case CMD_MFC4_SET: {
+		uint16_t p = clamp16(cmd.parameter);
+		cmd.cmd_ack = z_mfc_set(3, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
 
-		case CMD_FLOW1_GET:
-		    //GbReply r;
-		    //if (gasbox_xfer(GB_CMD_READ_ADC0, 0, &r, 200) && r.status == 0x80) {
-		        // return the number to PC using your usual result mechanism
-		        //output_ascii_result_number(r.value);          // or enqueue into resultqueue
-		       // return CMR_SUCCESSFULL;
-		   // }
-			cmd.cmd_ack = CMR_SUCCESSFULL;
-		    break;
+	// MFC1..MFC4 GET
+	case CMD_MFC1_GET: {
+		uint16_t v;
+		cmd.cmd_ack = z_mfc_get(0, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		if (cmd.cmd_ack == CMR_SUCCESSFULL)
+			cmd.parameter = v;
+		break;
+	}
+	case CMD_MFC2_GET: {
+		uint16_t v;
+		cmd.cmd_ack = z_mfc_get(1, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		if (cmd.cmd_ack == CMR_SUCCESSFULL)
+			cmd.parameter = v;
+		break;
+	}
+	case CMD_MFC3_GET: {
+		uint16_t v;
+		cmd.cmd_ack = z_mfc_get(2, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		if (cmd.cmd_ack == CMR_SUCCESSFULL)
+			cmd.parameter = v;
+		break;
+	}
+	case CMD_MFC4_GET: {
+		uint16_t v;
+		cmd.cmd_ack = z_mfc_get(3, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		if (cmd.cmd_ack == CMR_SUCCESSFULL)
+			cmd.parameter = v;
+		break;
+	}
+
+	// MFC1..MFC4 CLOSE
+	case CMD_MFC1_CLOSE: {
+		cmd.cmd_ack = z_mfc_close(0) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+	case CMD_MFC2_CLOSE: {
+		cmd.cmd_ack = z_mfc_close(1) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+	case CMD_MFC3_CLOSE: {
+		cmd.cmd_ack = z_mfc_close(2) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+	case CMD_MFC4_CLOSE: {
+		cmd.cmd_ack = z_mfc_close(3) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+
+	// Valves OPEN-CLOSE-READ
+	case CMD_V3_OPEN: {
+	    cmd.cmd_ack = z_valve_open(3) ? CMR_SUCCESSFULL : CMR_UNITBUSY;
+	    break;
+	}
+	case CMD_V3_CLOSE: {
+	    cmd.cmd_ack = z_valve_close(3) ? CMR_SUCCESSFULL : CMR_UNITBUSY;
+	    break;
+	}
+	case CMD_V3_READ: {
+	    uint16_t st;
+	    if (z_valve_get(3, &st)) { cmd.parameter = st; cmd.cmd_ack = CMR_SUCCESSFULL; }
+	    else                    { cmd.cmd_ack = CMR_COMMANDDENIED; }
+	    break;
+	}
+
+	case CMD_V4_OPEN: {
+	    cmd.cmd_ack = z_valve_open(4) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+	    break;
+	}
+	case CMD_V4_CLOSE: {
+	    cmd.cmd_ack = z_valve_close(4) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+	    break;
+	}
+	case CMD_V4_READ: {
+	    uint16_t st;
+	    if (z_valve_get(4, &st)) { cmd.parameter = st; cmd.cmd_ack = CMR_SUCCESSFULL; }
+	    else                    { cmd.cmd_ack = CMR_COMMANDDENIED; }
+	    break;
+	}
+
+	// GET SET ERR GASBOX
+	case CMD_GET_ERR_GB: {
+	    uint16_t e;
+	    cmd.cmd_ack = z_gb_err_get(&e);
+	    if (cmd.cmd_ack == CMR_SUCCESSFULL) cmd.parameter = e;
+	    break;
+	}
+	case CMD_RESET_ERR_GB: {
+	    cmd.cmd_ack = z_gb_err_clr();
+	    break;
+	}
 
 
-        default:
-            cmd.cmd_ack = CMR_UNKNOWNCOMMAND;
-            break;
+	default:
+		cmd.cmd_ack = CMR_UNKNOWNCOMMAND;
+		break;
 	};
 	resultQueue_push(cmd);
 

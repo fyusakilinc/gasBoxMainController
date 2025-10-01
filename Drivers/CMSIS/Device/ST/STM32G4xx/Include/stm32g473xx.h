@@ -1287,7 +1287,7 @@ typedef struct
 #define GPIOE               ((GPIO_TypeDef *) GPIOE_BASE)
 #define GPIOF               ((GPIO_TypeDef *) GPIOF_BASE)
 #define GPIOG               ((GPIO_TypeDef *) GPIOG_BASE)
-#define ADC1                ((ADC_TypeDef *) ADC1_BASE)
+#define FLOW1                ((ADC_TypeDef *) ADC1_BASE)
 #define ADC2                ((ADC_TypeDef *) ADC2_BASE)
 #define ADC12_COMMON        ((ADC_Common_TypeDef *) ADC12_COMMON_BASE)
 #define ADC3                ((ADC_TypeDef *) ADC3_BASE)

@@ -1,5 +1,6 @@
 // Status - Definitionen
 #include <stdint.h>
+#include "cmdlist.h"
 // Status - Definitionen
 #define ZERROR 			1
 #define POWERON         2
@@ -20,6 +21,21 @@
 #define SANITYCHECK_MODE_OFF    0
 #define SANITYCHECK_MODE_ON     1
 
+typedef struct {
+    uint8_t cmd_set;   // GB_CMD_SET_MFCn
+    uint8_t cmd_get;   // GB_CMD_GET_MFCn
+    uint8_t cmd_close; // GB_CMD_CLOSE_MFCn   (if applicable)
+} MfcWire;
+
+static const MfcWire kMfc[4] = {
+    { GB_CMD_SET_MFC1, GB_CMD_GET_MFC1, GB_CMD_CLOSE_MFC1 },
+    { GB_CMD_SET_MFC2, GB_CMD_GET_MFC2, GB_CMD_CLOSE_MFC2 },
+    { GB_CMD_SET_MFC3, GB_CMD_GET_MFC3, GB_CMD_CLOSE_MFC3 },
+    { GB_CMD_SET_MFC4, GB_CMD_GET_MFC4, GB_CMD_CLOSE_MFC4 },
+};
+
+#define GB_TIMEOUT_MS 2
+
 
 // Zentrale initialisieren.
 void zentrale_init(void);
@@ -37,57 +53,14 @@ uint8_t z_get_initok(void);
 void z_set_error(uint8_t errnr);
 uint16_t z_get_error(void);
 
-uint8_t z_set_remote_mode(uint8_t);
-int32_t z_get_remote_mode(void);
-
-uint8_t z_check_remote_mode(uint8_t);
-
-int32_t z_get_u_act_lcd(void);
-int32_t z_get_t1_act_lcd(void);
-int32_t z_get_t2_act_lcd(void);
-
-// EEPROM
-uint8_t z_store_profile(uint8_t);
-uint8_t z_load_profile(uint8_t);
-uint8_t z_get_active_profile(void);
-uint8_t z_set_default_profile(uint8_t);
-uint8_t z_get_default_profile(void);
-
-uint8_t z_set_rf(uint8_t);
-uint8_t z_get_rf(void);
 uint8_t z_get_status(void);
 
+uint8_t z_mfc_set(uint8_t, uint16_t);
+uint8_t z_mfc_get(uint8_t idx, uint16_t *out);
+uint8_t z_mfc_close(uint8_t);
 
-uint8_t z_set_a_ampphase(uint32_t);
-uint8_t z_set_amp_a(int32_t);
-int32_t z_get_amp_a(void);
-int32_t z_get_pf_a(void);
-uint8_t z_set_phase_a(int32_t);
-int32_t z_get_phase_a(void);
-int32_t z_get_pr_a(void);
-uint8_t z_set_apply(void);
-uint8_t z_set_freq_all(uint32_t);
-
-uint8_t z_set_b_ampphase(uint32_t);
-uint8_t z_set_amp_b(int32_t);
-int32_t z_get_amp_b(void);
-int32_t z_get_pf_b(void);
-uint8_t z_set_phase_b(int32_t);
-int32_t z_get_phase_b(void);
-int32_t z_get_pr_b(void);
-
-uint8_t z_set_c_ampphase(uint32_t);
-uint8_t z_set_amp_c(int32_t);
-int32_t z_get_amp_c(void);
-int32_t z_get_pf_c(void);
-uint8_t z_set_phase_c(int32_t);
-int32_t z_get_phase_c(void);
-int32_t z_get_pr_c(void);
-
-uint8_t z_set_d_ampphase(uint32_t);
-uint8_t z_set_amp_d(int32_t);
-int32_t z_get_amp_d(void);
-int32_t z_get_pf_d(void);
-uint8_t z_set_phase_d(int32_t);
-int32_t z_get_phase_d(void);
-int32_t z_get_pr_d(void);
+uint8_t z_valve_open(uint8_t idx);
+uint8_t z_valve_close(uint8_t idx);
+uint8_t z_valve_get(uint8_t idx, uint16_t *state);
+uint8_t z_gb_err_clr();
+uint8_t z_gb_err_get(uint16_t *out_err);

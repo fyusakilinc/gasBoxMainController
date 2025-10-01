@@ -1,0 +1,7 @@
+../Core/Src/iso.c:7:20:ISO_CS_OUT_L	1
+../Core/Src/iso.c:8:20:ISO_CS_OUT_H	1
+../Core/Src/iso.c:10:20:ISO_CS_IN_L	1
+../Core/Src/iso.c:11:20:ISO_CS_IN_H	1
+../Core/Src/iso.c:14:19:isoWrite	1
+../Core/Src/iso.c:22:10:iso_read_in_raw	1
+../Core/Src/iso.c:30:9:isoRead	1

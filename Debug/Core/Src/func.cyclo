@@ -1,0 +1,4 @@
+../Core/Src/func.c:6:6:delay_us	2
+../Core/Src/func.c:12:6:delay_ms	1
+../Core/Src/func.c:17:10:rmult	1
+../Core/Src/func.c:22:9:chk_crc	3

@@ -1,0 +1,15 @@
+../Core/Src/remote.c:83:6:remote_init	1
+../Core/Src/remote.c:96:6:remote_sero_get	4
+../Core/Src/remote.c:106:6:gb_sero_get	4
+../Core/Src/remote.c:115:6:remote_try_get_reply	2
+../Core/Src/remote.c:124:13:parse_binary	20
+../Core/Src/remote.c:234:6:parse_ascii	78
+../Core/Src/remote.c:621:6:output_ascii_cmdack	33
+../Core/Src/remote.c:768:6:Binary_Search	8
+../Core/Src/remote.c:815:6:output_ascii_result	9
+../Core/Src/remote.c:858:7:output_ascii	1
+../Core/Src/remote.c:867:9:remote_ascii_verbose	1
+../Core/Src/remote.c:872:9:remote_ascii_crlf	1
+../Core/Src/remote.c:893:20:gb_flush_rx	2
+../Core/Src/remote.c:898:16:gasbox_send	5
+../Core/Src/remote.c:930:9:gasbox_xfer	5

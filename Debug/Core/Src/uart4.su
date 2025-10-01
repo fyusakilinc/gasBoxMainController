@@ -1,0 +1,12 @@
+../Core/Src/uart4.c:23:6:HAL_UART_RxCpltCallback	16	static
+../Core/Src/uart4.c:29:6:HAL_UART_TxCpltCallback	16	static
+../Core/Src/uart4.c:35:6:uartRB_OnRxCplt	16	static
+../Core/Src/uart4.c:51:6:uartRB_OnTxCplt	24	static
+../Core/Src/uart4.c:75:6:uart_initAll	8	static
+../Core/Src/uart4.c:82:6:uartRB_Init	24	static
+../Core/Src/uart4.c:89:9:rb_free_tx	24	static
+../Core/Src/uart4.c:100:9:rb_free_rx	24	static
+../Core/Src/uart4.c:111:9:rb_rx_used	24	static
+../Core/Src/uart4.c:122:6:uartRB_KickTx	24	static
+../Core/Src/uart4.c:138:9:uartRB_Put	40	static
+../Core/Src/uart4.c:153:9:uartRB_Getc	24	static

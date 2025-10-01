@@ -1,0 +1,3 @@
+../Core/Src/priority_pushpop.c:26:9:priolist_push	40	static
+../Core/Src/priority_pushpop.c:56:6:priolist_node_insert	32	static
+../Core/Src/priority_pushpop.c:83:9:priolist_pop	32	static

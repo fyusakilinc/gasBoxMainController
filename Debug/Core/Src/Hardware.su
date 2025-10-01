@@ -1,0 +1,11 @@
+../Core/Src/Hardware.c:15:6:hw_init	4	static
+../Core/Src/Hardware.c:24:6:hw_sero_get	4	static
+../Core/Src/Hardware.c:30:6:hw_sero_set	8	static
+../Core/Src/Hardware.c:37:6:hw_set_error_out	16	static
+../Core/Src/Hardware.c:42:9:u_ok	24	static
+../Core/Src/Hardware.c:47:9:update_uok	16	static
+../Core/Src/Hardware.c:56:6:setStartPump	16	static
+../Core/Src/Hardware.c:61:6:setStopPump	16	static
+../Core/Src/Hardware.c:68:9:readPumpWarning	16	static
+../Core/Src/Hardware.c:73:9:readPumpAlarm	16	static
+../Core/Src/Hardware.c:78:9:readPumpRemote	16	static

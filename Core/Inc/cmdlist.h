@@ -45,6 +45,8 @@ enum EN_CMDList{
 	CMD_DO1_SET = 68,
 	CMD_DO2_GET = 69,
 	CMD_DO2_SET = 70,
+	CMD_FLOW1_SET = 71,
+	CMD_FLOW1_GET = 72,
 };
 
 #endif /* CMDLIST_H_ */

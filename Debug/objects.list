@@ -1,6 +1,7 @@
 "./Core/Src/Hardware.o"
 "./Core/Src/func.o"
 "./Core/Src/func_binarypro.o"
+"./Core/Src/gasbox.o"
 "./Core/Src/gpio.o"
 "./Core/Src/iso.o"
 "./Core/Src/main.o"

@@ -11,6 +11,7 @@
 #include "zentrale.h"
 #include "zentrale_cmd_sero.h"
 #include "uart4.h"
+#include "gasbox.h"
 
 
 //--- PRIVATE DEFINES -------------------------------------------------------------------------------------------------------
@@ -241,6 +242,28 @@ void z_cmd_sero(stack_item cmd)
 			cmd.parameter = 1;//z_get_t2_act_lcd();
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 			break;
+
+		case CMD_FLOW1_SET:
+		    //if (!has_param) return CMR_PARAMETERINVALID;
+		    //uint16_t code = (val < 0) ? 0 : (val > 65535 ? 65535 : (uint16_t)val);
+		    //GbReply r;
+		    //if (gasbox_xfer(GB_CMD_SET_DAC0, code, &r, 200) && r.status == 0x80) {
+		        // tell PC it's OK (use your existing OK path)
+		        //output_ascii_cmdack(CMR_SUCCESSFULL);         // or queue an OK
+		        //return CMR_SUCCESSFULL;
+		    //}
+			cmd.cmd_ack = CMR_SUCCESSFULL; // or a better error code you use for comms/timeout
+		    break;
+
+		case CMD_FLOW1_GET:
+		    //GbReply r;
+		    //if (gasbox_xfer(GB_CMD_READ_ADC0, 0, &r, 200) && r.status == 0x80) {
+		        // return the number to PC using your usual result mechanism
+		        //output_ascii_result_number(r.value);          // or enqueue into resultqueue
+		       // return CMR_SUCCESSFULL;
+		   // }
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		    break;
 
 
         default:

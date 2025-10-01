@@ -49,6 +49,8 @@ static const Cmdline_Item ASCIICmdTable[] = {
   {"DO1",   CMD_DO1_SET},   // use "DO1 1;" or "DO1 0;" for write
   {"DO2?",  CMD_DO2_GET},
   {"DO2",   CMD_DO2_SET},
+  {"FLOW1",   CMD_FLOW1_SET},
+  {"FLOW1?",  CMD_FLOW1_GET},
   // add more: "VALV1?", "PUMP:ALARM?", etc.
 };
 
@@ -68,10 +70,6 @@ static uint8_t lengthRx = 0;
 static uint8_t dleFlag = 0;
 static uint8_t checksum = 0;
 
-// last parsed reply + ready flag
-static volatile uint8_t reply_ready = 0;
-static GbReply last_reply;
-
 // forward
 static void parse_binary(void);
 void parse_ascii(void);
@@ -86,10 +84,8 @@ void remote_init(void) {
 	lengthRx = 0;
 	dleFlag = 0;
 	checksum = 0;
-	reply_ready = 0;
 	memset((void*) msg, 0, sizeof(msg));
 	memset(bufferRx, 0, sizeof(bufferRx));
-	memset(&last_reply, 0, sizeof(last_reply));
 }
 
 // Pull bytes from UART4 RX ring into msg[] and feed parser
@@ -102,23 +98,6 @@ void remote_sero_get(void)
 	if (nzeichen) parse_ascii();
 }
 
-// Gasbox (UART4, binary)
-void gb_sero_get(void)
-{
-    nzeichen = 0;
-    while ((rb_rx_used(&uart4_rb) > 0) && (nzeichen < RMT_MAX_PAKET_LENGTH)) {
-        msg[nzeichen++] = (uint8_t)uartRB_Getc(&uart4_rb);
-    }
-    if (nzeichen) parse_binary();
-}
-
-bool remote_try_get_reply(GbReply *out) {
-	if (!reply_ready)
-		return false;
-	*out = last_reply;
-	reply_ready = 0;
-	return true;
-}
 
 // ---- parser  ----
 static void parse_binary(void) {
@@ -209,14 +188,14 @@ static void parse_binary(void) {
 				uint8_t pL = bufferRx[3];
 				uint8_t cks = bufferRx[4];
 
-				// checksum covers only the 4 payload bytes
+				// checksum covers only the 4 payload bytes TODO: fix here
 				uint8_t sum = (uint8_t) (cmd + status + pH + pL);
-				if (sum == cks) {
+				/*if (sum == cks) {
 					last_reply.cmd = cmd;
 					last_reply.status = status;
 					last_reply.value = ((uint16_t) pH << 8) | pL;
 					reply_ready = 1;            // make available to caller
-				}
+				}*/
 				// else: checksum wrong -> ignore silently for now -- TODO: ERROR FLAG
 			}
 			// reset for next frame
@@ -909,78 +888,3 @@ uint8_t remote_ascii_crlf(void)
 	return crlf;
 }
 
-//----- GASBOX CONTROLLER -------------------------------------------------
-
-static inline uint8_t gb_sum8(const uint8_t *p, int n) {
-	uint32_t s = 0;
-	for (int i = 0; i < n; i++)
-		s += p[i];
-	return (uint8_t) s;
-}
-
-// Append one byte to a small local buffer with DLE-doubling if needed
-static inline void gb_push_escaped(uint8_t **wp, uint8_t b) {
-	*(*wp)++ = b;
-	if (b == RMT_DLE)
-		*(*wp)++ = b; // double it
-}
-
-static inline void gb_flush_rx(void) {
-	while (rb_rx_used(&uart4_rb))
-		(void) uartRB_Getc(&uart4_rb);
-}
-
-static uint8_t gasbox_send(uint8_t cmd, uint16_t param) {
-	uint8_t payload[4] = { cmd, 0x00, (uint8_t) (param >> 8), (uint8_t) param };
-	uint8_t cks = (uint8_t) (payload[0] + payload[1] + payload[2] + payload[3]);
-
-	uint8_t frame[16], *w = frame;
-	*w++ = 0x3D;
-	*w++ = 0x53;
-	for (int i = 0; i < 4; i++) {
-		*w++ = payload[i];
-		if (payload[i] == 0x3D)
-			*w++ = 0x3D;
-	}
-	*w++ = cks;
-	if (cks == 0x3D)
-		*w++ = 0x3D;
-	*w++ = 0x3D;
-	*w++ = 0x45;
-	uint8_t len = (uint8_t) (w - frame);
-
-	if (len > rb_free_tx(&uart4_rb))
-		return 0;
-	uartRB_Put(&uart4_rb, frame, len);
-	uartRB_KickTx(&uart4_rb);
-	return 1;
-}
-
-/**
- * Send and read back one gasbox command frame.
- * cmd  : command ID (e.g., 0x02=Set DAC0, 0x08=Read ADC2, 0x0C=Open valve 1)
- * param: 16-bit parameter (e.g., DAC code). Use 0 for commands that don't need it.
- * returns 1 on success (queued), 0 if TX ring didn't have enough space.
- */
-uint8_t gasbox_xfer(uint8_t cmd, uint16_t param, GbReply *out,
-		uint32_t timeout_ms) {
-
-	gb_flush_rx();
-	(void) gb_try_get_reply(out);
-
-	if (!gasbox_send(cmd, param)) {
-		return 0;
-	}
-
-	uint32_t t0 = HAL_GetTick();
-	for (;;) {
-		GbReply r;
-		if (gb_try_get_reply(&r) && r.cmd == cmd) {
-			*out = r;
-			return 1;
-		}
-		if ((HAL_GetTick() - t0) > timeout_ms) {
-			return 0;
-		}
-	}
-}

@@ -2,12 +2,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-// one parsed reply
-typedef struct {
-    uint8_t  cmd;
-    uint8_t  status;    // 0x80 = OK
-    uint16_t value;     // paramH:paramL
-} GbReply;
 
 void remote_init(void);
 
@@ -16,7 +10,6 @@ void remote_init(void);
 //--- PUBLIC FUNKTIONSDEKLARATION -------------------------------------------------------------------------------------------
 // erhält und verarbeitet den Befehl(in binäry- oder ASCII-Format) per UART1
 void remote_sero_get(void);
-void gb_sero_get(void);
 
 // prüft, ob die Steuerung über den Serial-Port eingeschaltet ist
 uint8_t ser_check_remote(uint8_t, uint16_t);

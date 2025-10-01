@@ -37,6 +37,7 @@
 #include "stacks.h"
 #include "resultqueue.h"
 #include "zentrale_cmd_sero.h"
+#include "gasbox.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

@@ -32,6 +32,11 @@
 #include "zentrale.h"
 #include "timer0.h"
 #include "func.h"
+#include "prioritylist.h"
+#include "priority_pushpop.h"
+#include "stacks.h"
+#include "resultqueue.h"
+#include "zentrale_cmd_sero.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -103,8 +108,12 @@ int main(void)
   MX_USART3_UART_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
+  //--- Stacks fuer die Anfragen an Zentrale und MatchingCube vorbereiten ------
+  priolist_init();
+  stacks_init();
+  //--- Ergbenissstack fuer die Antworten von Zentrale und MatchingCube vorbereiten -------
+  resultQueue_init();
   uart_initAll();
-  hw_sero_set();
   remote_init();
   zentrale_init();
 
@@ -121,11 +130,13 @@ int main(void)
 	  hw_sero_get();
 	  remote_sero_get();
 	  gb_sero_get();
+	  result_get_sero();
 
 	  zentrale();
 
-	  hw_sero_set();
-	  uartRB_KickTx(&usart3_rb);
+		hw_sero_set();
+		z_cmd_scheduler();
+		result_get_sero();
   }
   /* USER CODE END 3 */
 }

@@ -20,6 +20,7 @@
 "./Core/Src/uart4.o"
 "./Core/Src/usart.o"
 "./Core/Src/zentrale.o"
+"./Core/Src/zentrale_cmd_sero.o"
 "./Core/Startup/startup_stm32g473vetx.o"
 "./Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal.o"
 "./Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_cortex.o"

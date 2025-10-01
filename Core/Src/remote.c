@@ -508,7 +508,7 @@ void parse_ascii(void)
 
 					if (cmd_index & 1)
 					{
-						if (z_get_rmt() == z_rmt_rs232)
+						if (z_get_remote_mode() == z_rmt_rs232)
 						{
 							if ((pflag == 1))
 							{
@@ -526,7 +526,7 @@ void parse_ascii(void)
 								//uart0_puti(stack_data.cmd_index);
 
 							}
-							else if(cmd_index == CMD_ERR_RESET)
+							else if(cmd_index == CMD_RESET_ERROR)
 							{
 								stack_data.parameter = 0;
 								stack_data.rwflg = WRITE;
@@ -540,37 +540,18 @@ void parse_ascii(void)
 						}
 						else
 						{
-							if ((cmd_index == CMD_SPC_CTL_SET) || (cmd_index == CMD_NOP))         //SPC:CTL
+							if ((cmd_index == CMD_SET_REM_CTL))        //SPC:CTL
 							{
 
-								if ((pflag == 1))
-								{
-									if (negativ_zahl)
-									{
-										ret = CMR_PARAMETERINVALID;
-									}
-									else
-									{
-										stack_data.parameter = val;
-										stack_data.rwflg = WRITE;
-										ret = stack_insert_sero(stack_data);
-									}
-								}
-								else if(cmd_index == CMD_NOP)
-								{
-									stack_data.parameter = 0;
+								if (negativ_zahl) {
+									ret = CMR_PARAMETERINVALID;
+								} else {
+									stack_data.parameter = val;
 									stack_data.rwflg = WRITE;
 									ret = stack_insert_sero(stack_data);
 								}
-								else
-								{
-									{
-										ret = CMR_MISSINGPARAMETER;
-									}
-								};
-							}
-							else
-							{
+
+							} else {
 								ret = CMR_COMMANDDENIED;
 							};
 						};
@@ -616,6 +597,43 @@ void parse_ascii(void)
 		//	versandstart1();
 
 	}while ( ptr < nzeichen );
+}
+
+void serialSendAnswer(uint8_t *message)
+{
+    uint8_t i;
+	uint8_t n = 0;
+    uint8_t checksum = 0;
+	char buffer[RMT_MAX_PAKET_LENGTH + 1];
+
+		if((message[2] == 0x00) || (message[2] == 0x02) || (message[2] == 0x03) || (message[2] == 0x0A))    //für die Kompabilität vom altem MatchingCube-Programm. später zu löschen
+		{
+			message[2] |= 0x80;
+		}
+
+    buffer[n++] = RMT_DLE;
+    buffer[n++] = RMT_SOT;
+    for ( i=0; i<(CMR_DATAPAKET_LENGTH-1); i++ )
+    {
+        buffer[n++] =message[i];
+        if ( message[i] == RMT_DLE )
+        {
+            buffer[n++] = message[i];
+            // Die Prüfsumme erstreckt sich nur noch über die NETTO-Payload!
+            //checksum += message[i];
+        }
+        checksum += message[i];
+    }
+    buffer[n++] =checksum;
+    if ( checksum == RMT_DLE )
+    {
+        buffer[n++] = checksum;
+    }
+    buffer[n++] = RMT_DLE;
+    buffer[n++] = RMT_EOT;
+
+	uartRB_Put(&usart3_rb, buffer, n);
+	uartRB_KickTx(&usart3_rb);
 }
 
 void output_ascii_cmdack(uint8_t verbose_flg, uint8_t crlf_flg, uint8_t cmd_ack)
@@ -820,10 +838,10 @@ void output_ascii_result(uint8_t verbose_data, uint8_t crlf_data, stack_item *re
 		case READ:
 		switch (result_data->cmd_index)
 		{
-			case CMD_STA_GET:
+			case CMD_GET_STATUS:
 			//output_ascii_Piii_status(result_data->parameter, verbose_data);
 			break;
-			case CMD_ERR_GET:
+			case CMD_GET_ERR:
 			//output_ascii_Piii_error(result_data->parameter, verbose_data);
 			break;
 			//case 8:
@@ -853,6 +871,23 @@ void output_ascii_result(uint8_t verbose_data, uint8_t crlf_data, stack_item *re
 		output_ascii_cmdack(verbose_data, crlf_data, result_data->cmd_ack);
 		break;
 	};
+}
+
+void output_binary_result(stack_item *cmd)
+{
+	uint8_t buffer[7];
+	uint16_t s_tmp = cmd->cmd_sender;
+	uint16_t r_tmp = cmd->cmd_receiver;
+	int32_t param = cmd->parameter;
+
+	buffer[0] = (s_tmp << 5) | (r_tmp << 3);
+	buffer[1] = cmd->cmd_index;
+	buffer[2] = cmd->cmd_ack;
+	buffer[3] = (param >> 24) & 0xFF;
+	buffer[4] = (param >> 16) & 0xFF;
+	buffer[5] = (param >> 8) & 0xFF;
+	buffer[6] = param & 0xFF;
+	serialSendAnswer(buffer);
 }
 
  void output_ascii(int32_t val)

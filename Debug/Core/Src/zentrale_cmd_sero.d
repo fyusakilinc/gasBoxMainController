@@ -1,4 +1,9 @@
-Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
+Core/Src/zentrale_cmd_sero.o: ../Core/Src/zentrale_cmd_sero.c \
+ ../Core/Inc/SG_global.h ../Core/Inc/protocoll.h ../Core/Inc/cmdlist.h \
+ ../Core/Inc/stacks.h ../Core/Inc/SG_global.h ../Core/Inc/prioritylist.h \
+ ../Core/Inc/priority_pushpop.h ../Core/Inc/resultqueue.h \
+ ../Core/Inc/zentrale.h ../Core/Inc/zentrale_cmd_sero.h \
+ ../Core/Inc/uart4.h ../Core/Inc/main.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal.h \
  ../Core/Inc/stm32g4xx_hal_conf.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_rcc.h \
@@ -29,14 +34,18 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_tim.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_tim_ex.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart.h \
- ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart_ex.h \
- ../Core/Inc/spi.h ../Core/Inc/main.h ../Core/Inc/tim.h \
- ../Core/Inc/usart.h ../Core/Inc/gpio.h ../Core/Inc/uart4.h \
- ../Core/Inc/Hardware.h ../Core/Inc/iso.h ../Core/Inc/remote.h \
- ../Core/Inc/SG_global.h ../Core/Inc/zentrale.h ../Core/Inc/timer0.h \
- ../Core/Inc/func.h ../Core/Inc/prioritylist.h \
- ../Core/Inc/priority_pushpop.h ../Core/Inc/stacks.h \
- ../Core/Inc/resultqueue.h ../Core/Inc/zentrale_cmd_sero.h
+ ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart_ex.h
+../Core/Inc/SG_global.h:
+../Core/Inc/protocoll.h:
+../Core/Inc/cmdlist.h:
+../Core/Inc/stacks.h:
+../Core/Inc/SG_global.h:
+../Core/Inc/prioritylist.h:
+../Core/Inc/priority_pushpop.h:
+../Core/Inc/resultqueue.h:
+../Core/Inc/zentrale.h:
+../Core/Inc/zentrale_cmd_sero.h:
+../Core/Inc/uart4.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal.h:
 ../Core/Inc/stm32g4xx_hal_conf.h:
@@ -69,21 +78,3 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_tim_ex.h:
 ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart.h:
 ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart_ex.h:
-../Core/Inc/spi.h:
-../Core/Inc/main.h:
-../Core/Inc/tim.h:
-../Core/Inc/usart.h:
-../Core/Inc/gpio.h:
-../Core/Inc/uart4.h:
-../Core/Inc/Hardware.h:
-../Core/Inc/iso.h:
-../Core/Inc/remote.h:
-../Core/Inc/SG_global.h:
-../Core/Inc/zentrale.h:
-../Core/Inc/timer0.h:
-../Core/Inc/func.h:
-../Core/Inc/prioritylist.h:
-../Core/Inc/priority_pushpop.h:
-../Core/Inc/stacks.h:
-../Core/Inc/resultqueue.h:
-../Core/Inc/zentrale_cmd_sero.h:

@@ -21,12 +21,14 @@ int16_t rb_free_tx(UartRB *p);
 
 // Reception interrupt
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+	uartRB_OnRxCplt(&usart3_rb, huart);
 	uartRB_OnRxCplt(&uart4_rb, huart);
 	uartRB_OnRxCplt(&uart5_rb, huart);
 	uartRB_OnRxCplt(&usart1_rb, huart);
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+	uartRB_OnTxCplt(&usart3_rb, huart);
 	uartRB_OnTxCplt(&uart4_rb, huart);
 	uartRB_OnTxCplt(&uart5_rb, huart);
 	uartRB_OnTxCplt(&usart1_rb, huart);

@@ -65,7 +65,7 @@ void MX_ADC5_Init(void)
 
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_7;
+  sConfig.Channel = ADC_CHANNEL_10;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
@@ -106,12 +106,9 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
 
     __HAL_RCC_GPIOD_CLK_ENABLE();
     /**ADC5 GPIO Configuration
-    PD10     ------> ADC5_IN7
-    PD11     ------> ADC5_IN8
-    PD12     ------> ADC5_IN9
     PD13     ------> ADC5_IN10
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13;
+    GPIO_InitStruct.Pin = GPIO_PIN_13;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
@@ -134,12 +131,9 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
     __HAL_RCC_ADC345_CLK_DISABLE();
 
     /**ADC5 GPIO Configuration
-    PD10     ------> ADC5_IN7
-    PD11     ------> ADC5_IN8
-    PD12     ------> ADC5_IN9
     PD13     ------> ADC5_IN10
     */
-    HAL_GPIO_DeInit(GPIOD, GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13);
+    HAL_GPIO_DeInit(GPIOD, GPIO_PIN_13);
 
   /* USER CODE BEGIN ADC5_MspDeInit 1 */
 

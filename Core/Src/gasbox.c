@@ -60,8 +60,8 @@ void gb_on_frame(uint8_t cmd, uint8_t status, uint16_t value);
 void gb_sero_get(void)
 {
     nzeichen = 0;
-    while ((rb_rx_used(&uart4_rb) > 0) && (nzeichen < RMT_MAX_PAKET_LENGTH)) {
-        msg[nzeichen++] = (uint8_t)uartRB_Getc(&uart4_rb);
+    while ((rb_rx_used(&uart5_rb) > 0) && (nzeichen < RMT_MAX_PAKET_LENGTH)) {
+        msg[nzeichen++] = (uint8_t)uartRB_Getc(&uart5_rb);
     }
     if (nzeichen) parse_binary_gasbox();
 }
@@ -214,8 +214,8 @@ uint8_t gasbox_send(uint8_t cmd, uint16_t param)
     uint8_t len = (uint8_t)(w - frame);
 
     // queue to UART4 ring
-    if (!uartRB_Put(&uart4_rb, (char*)frame, len)) return 0;
-    uartRB_KickTx(&uart4_rb);
+    if (!uartRB_Put(&uart5_rb, (char*)frame, len)) return 0;
+    uartRB_KickTx(&uart5_rb);
     return 1;
 }
 

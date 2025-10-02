@@ -44,24 +44,9 @@ void zentrale_init(void) {
 
 }
 
-static void z_update_power_errors(void) {
-	// If you only have update_uok():
-	if (!update_uok()) {
-		// If you want individual bits, read pins directly (or add helpers):
-		uint8_t ok5 = u_ok(UC__5VOK_GPIO_Port, UC__5VOK_Pin);
-		uint8_t ok12 = u_ok(UC__12VOK_GPIO_Port, UC__12VOK_Pin);
-		if (!ok5)
-			z_set_error(SG_ERR_U5V);
-		if (!ok12)
-			z_set_error(SG_ERR_U12V);
-	}
-}
-
 
 // Zentrale denken und entscheiden.
 void zentrale(void) {	// ----- DENKEN -----
-
-	z_update_power_errors();
 
 	if (readPumpAlarm()) {
 		z_set_error(SG_ERR_PUMP_ALARM);

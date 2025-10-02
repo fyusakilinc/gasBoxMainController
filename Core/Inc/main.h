@@ -67,6 +67,10 @@ void Error_Handler(void);
 #define UC_PUMP_ALARM_GPIO_Port GPIOE
 #define UC_PUMP_REMOTE_Pin GPIO_PIN_6
 #define UC_PUMP_REMOTE_GPIO_Port GPIOE
+#define UC__12VOK_Pin GPIO_PIN_14
+#define UC__12VOK_GPIO_Port GPIOC
+#define UC__5VOK_Pin GPIO_PIN_15
+#define UC__5VOK_GPIO_Port GPIOC
 #define UC_CS_AUX1_Pin GPIO_PIN_9
 #define UC_CS_AUX1_GPIO_Port GPIOF
 #define UC_CS_AUX0_Pin GPIO_PIN_4
@@ -77,12 +81,12 @@ void Error_Handler(void);
 #define UC_CS_SPS_IN_GPIO_Port GPIOB
 #define UC_AUX_RESET_Pin GPIO_PIN_9
 #define UC_AUX_RESET_GPIO_Port GPIOE
+#define MAX_VDDA_OK_Pin GPIO_PIN_10
+#define MAX_VDDA_OK_GPIO_Port GPIOE
 #define UC_HEARTBEAT_Pin GPIO_PIN_3
 #define UC_HEARTBEAT_GPIO_Port GPIOD
-#define UC__5VOK_Pin GPIO_PIN_4
-#define UC__5VOK_GPIO_Port GPIOD
-#define UC__12VOK_Pin GPIO_PIN_5
-#define UC__12VOK_GPIO_Port GPIOD
+#define UC_ITL_OK_Pin GPIO_PIN_1
+#define UC_ITL_OK_GPIO_Port GPIOE
 
 /* USER CODE BEGIN Private defines */
 

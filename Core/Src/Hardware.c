@@ -1,6 +1,8 @@
 #include "main.h"
 #include "Hardware.h"
+#include "zentrale.h"
 #include "timer0.h"
+#include "SG_global.h"
 #include <stdbool.h>
 
 
@@ -10,6 +12,9 @@
 // STM32: Defines and intial things provided by main.h and HAL stuff from MXCube
 
 //-----------------FUNKTIONSDEFINITIONEN---------------------------------------
+
+uint8_t u_ok(GPIO_TypeDef *port, uint16_t pin);
+uint8_t update_uok(void);
 
 // Initialisierung der Hardware
 void hw_init(void)
@@ -21,8 +26,18 @@ void hw_init(void)
 
 // Serviceroutine Hadware Get
 // Prueft im wesentlichen auf Harwarefehlersignale
-void hw_sero_get(void)
-{
+void hw_sero_get(void) {
+	if (!update_uok()) {
+		uint8_t ok5 = u_ok(UC__5VOK_GPIO_Port, UC__5VOK_Pin);
+		uint8_t ok12 = u_ok(UC__12VOK_GPIO_Port, UC__12VOK_Pin);
+
+		if (!ok5) {
+			z_set_error(SG_ERR_U5V);
+		}
+		if (!ok12) {
+			z_set_error(SG_ERR_U12V);
+		}
+	}
 }
 
 // Serviceroutine Hadware Set

@@ -93,8 +93,8 @@ void remote_init(void) {
 // Pull bytes from UART4 RX ring into msg[] and feed parser
 void remote_sero_get(void) {
 	nzeichen = 0;
-	while ((rb_rx_used(&usart3_rb) > 0) && (nzeichen < RMT_MAX_PAKET_LENGTH)) {
-		msg[nzeichen++] = (uint8_t) uartRB_Getc(&usart3_rb);   // legacy getc()
+	while ((rb_rx_used(&uart4_rb) > 0) && (nzeichen < RMT_MAX_PAKET_LENGTH)) {
+		msg[nzeichen++] = (uint8_t) uartRB_Getc(&uart4_rb);   // legacy getc()
 	}
 	if (nzeichen)
 		parse_ascii();
@@ -128,7 +128,7 @@ void parse_ascii(void) {
 			if (echo == 1)// Wenn die Kommunikationsmode im Echo-Mode ist, wird es das Zeichen direkt wieder zurückgeben.
 					{
 				char1[0] = nc;
-				uartRB_Put(&usart3_rb, char1, 1);
+				uartRB_Put(&uart4_rb, char1, 1);
 			}
 		} else
 			nc = 0;
@@ -362,7 +362,7 @@ void parse_ascii(void) {
 			}
 			;
 
-			uartRB_KickTx(&usart3_rb);
+			uartRB_KickTx(&uart4_rb);
 			strcpy(cmd, "");
 			val = 0;
 			ret = 0;
@@ -416,17 +416,17 @@ void serialSendAnswer(uint8_t *message) {
 	buffer[n++] = RMT_DLE;
 	buffer[n++] = RMT_EOT;
 
-	uartRB_Put(&usart3_rb, buffer, n);
-	uartRB_KickTx(&usart3_rb);
+	uartRB_Put(&uart4_rb, buffer, n);
+	uartRB_KickTx(&uart4_rb);
 }
 
 void output_ascii_cmdack(uint8_t verbose_flg, uint8_t crlf_flg, uint8_t cmd_ack) {
 
 	if (verbose_flg > 0) {
 		if (cmd_ack == CMR_SUCCESSFULL) {
-			uartRB_Put(&usart3_rb, ">OK;", 4);
+			uartRB_Put(&uart4_rb, ">OK;", 4);
 		} else if (cmd_ack == CMR_SEMICOLONONLY) {
-			uartRB_Put(&usart3_rb, ";", 1);
+			uartRB_Put(&uart4_rb, ";", 1);
 		} else {
 			if (verbose_flg == 1) {
 				char tmp[10];
@@ -440,7 +440,7 @@ void output_ascii_cmdack(uint8_t verbose_flg, uint8_t crlf_flg, uint8_t cmd_ack)
 				}
 				strcat(tmp2, tmp);
 				strcat(tmp2, ";");
-				uartRB_Put(&usart3_rb, tmp2, strlen(tmp2));
+				uartRB_Put(&uart4_rb, tmp2, strlen(tmp2));
 			} else if (verbose_flg == 2) {
 				char tmp[35];
 				char tmp2[40];
@@ -523,7 +523,7 @@ void output_ascii_cmdack(uint8_t verbose_flg, uint8_t crlf_flg, uint8_t cmd_ack)
 
 				strcat(tmp2, tmp);
 				strcat(tmp2, ";");
-				uartRB_Put(&usart3_rb, tmp2, strlen(tmp2));
+				uartRB_Put(&uart4_rb, tmp2, strlen(tmp2));
 			}
 		}
 	} else {
@@ -531,18 +531,18 @@ void output_ascii_cmdack(uint8_t verbose_flg, uint8_t crlf_flg, uint8_t cmd_ack)
 			//if (((cmd_ack & 0x80) == CMR_SUCCESSFULL))
 			if ((cmd_ack == CMR_SEMICOLONONLY)
 					|| ((cmd_ack & 0x80) == CMR_SUCCESSFULL))
-				uartRB_Put(&usart3_rb, ";", 1);
+				uartRB_Put(&uart4_rb, ";", 1);
 
 		};
 	}
 
 	if ((crlf_flg & 0x01) > 0) {	//crlf_char= "\r";        //d.h. CR
-		uartRB_Put(&usart3_rb, "\r", 1);
+		uartRB_Put(&uart4_rb, "\r", 1);
 	}
 	if ((crlf_flg & 0x02) > 0) {	//*crlf_char=";
-		uartRB_Put(&usart3_rb, "\n", 1);
+		uartRB_Put(&uart4_rb, "\n", 1);
 	}
-	uartRB_KickTx(&usart3_rb);
+	uartRB_KickTx(&uart4_rb);
 }
 
 //Die interne Befehlnummer werden für den eingegebenen Befehl zurückgeliefert.
@@ -634,8 +634,8 @@ void output_binary_result(stack_item *cmd) {
 void output_ascii(int32_t val) {
 	char tmp[34];
 	sprintf(tmp, "%-ld", val);
-	uartRB_Put(&usart3_rb, tmp, strlen(tmp));
-	uartRB_KickTx(&usart3_rb);
+	uartRB_Put(&uart4_rb, tmp, strlen(tmp));
+	uartRB_KickTx(&uart4_rb);
 }
 
 uint8_t remote_ascii_verbose(void) {

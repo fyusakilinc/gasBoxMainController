@@ -46,4 +46,5 @@ int16_t rb_rx_used(const UartRB *p);
 extern UartRB uart4_rb;
 extern UartRB uart5_rb;
 extern UartRB usart1_rb;
+extern UartRB usart2_rb;
 extern UartRB usart3_rb;

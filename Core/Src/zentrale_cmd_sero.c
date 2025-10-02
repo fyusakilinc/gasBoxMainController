@@ -12,6 +12,7 @@
 #include "zentrale_cmd_sero.h"
 #include "uart4.h"
 #include "func.h"
+#include "hardware.h"
 #include "gasbox.h"
 
 
@@ -101,50 +102,50 @@ void z_cmd_sero(stack_item cmd) {
 	switch (cmd.cmd_index) {
 
 	// MFC1..MFC4 SET
-	case CMD_MFC1_SET: {
+	case CMD_SET_GAS_PDE: {
 		uint16_t p = clamp16(cmd.parameter);
 		cmd.cmd_ack = z_mfc_set(0, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
-	case CMD_MFC2_SET: {
+	case CMD_SET_GAS_AIR: {
 		uint16_t p = clamp16(cmd.parameter);
 		cmd.cmd_ack = z_mfc_set(1, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
-	case CMD_MFC3_SET: {
+	case CMD_SET_GAS_O2: {
 		uint16_t p = clamp16(cmd.parameter);
 		cmd.cmd_ack = z_mfc_set(2, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
-	case CMD_MFC4_SET: {
+	case CMD_SET_GAS_4: {
 		uint16_t p = clamp16(cmd.parameter);
 		cmd.cmd_ack = z_mfc_set(3, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	// MFC1..MFC4 GET
-	case CMD_MFC1_GET: {
+	case CMD_GET_GAS_PDE: {
 		uint16_t v;
 		cmd.cmd_ack = z_mfc_get(0, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		if (cmd.cmd_ack == CMR_SUCCESSFULL)
 			cmd.parameter = v;
 		break;
 	}
-	case CMD_MFC2_GET: {
+	case CMD_GET_GAS_AIR: {
 		uint16_t v;
 		cmd.cmd_ack = z_mfc_get(1, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		if (cmd.cmd_ack == CMR_SUCCESSFULL)
 			cmd.parameter = v;
 		break;
 	}
-	case CMD_MFC3_GET: {
+	case CMD_GET_GAS_O2: {
 		uint16_t v;
 		cmd.cmd_ack = z_mfc_get(2, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		if (cmd.cmd_ack == CMR_SUCCESSFULL)
 			cmd.parameter = v;
 		break;
 	}
-	case CMD_MFC4_GET: {
+	case CMD_GET_GAS_4: {
 		uint16_t v;
 		cmd.cmd_ack = z_mfc_get(3, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		if (cmd.cmd_ack == CMR_SUCCESSFULL)
@@ -153,52 +154,88 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	// MFC1..MFC4 CLOSE
-	case CMD_MFC1_CLOSE: {
+	case CMD_CLOSE_GAS_PDE: {
 		cmd.cmd_ack = z_mfc_close(0) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
-	case CMD_MFC2_CLOSE: {
+	case CMD_CLOSE_GAS_AIR: {
 		cmd.cmd_ack = z_mfc_close(1) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
-	case CMD_MFC3_CLOSE: {
+	case CMD_CLOSE_GAS_O2: {
 		cmd.cmd_ack = z_mfc_close(2) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
-	case CMD_MFC4_CLOSE: {
+	case CMD_CLOSE_GAS_4: {
 		cmd.cmd_ack = z_mfc_close(3) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	// Valves OPEN-CLOSE-READ
-	case CMD_V3_OPEN: {
-	    cmd.cmd_ack = z_valve_open(3) ? CMR_SUCCESSFULL : CMR_UNITBUSY;
+	case CMD_V3_SET: {
+		uint16_t p = cmd.parameter;
+		uint8_t ret;
+		if (p) {ret = z_valve_open(3); } else { ret = z_valve_close(3); }
+	    cmd.cmd_ack = ret ? CMR_SUCCESSFULL : CMR_UNITBUSY;
 	    break;
 	}
-	case CMD_V3_CLOSE: {
-	    cmd.cmd_ack = z_valve_close(3) ? CMR_SUCCESSFULL : CMR_UNITBUSY;
-	    break;
-	}
-	case CMD_V3_READ: {
+
+	case CMD_V3_GET: {
 	    uint16_t st;
 	    if (z_valve_get(3, &st)) { cmd.parameter = st; cmd.cmd_ack = CMR_SUCCESSFULL; }
 	    else                    { cmd.cmd_ack = CMR_COMMANDDENIED; }
 	    break;
 	}
 
-	case CMD_V4_OPEN: {
-	    cmd.cmd_ack = z_valve_open(4) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+	case CMD_V4_SET: {
+		uint16_t p = cmd.parameter;
+		uint8_t ret;
+		if (p) {ret = z_valve_open(4); } else { ret = z_valve_close(4); }
+	    cmd.cmd_ack = ret ? CMR_SUCCESSFULL : CMR_UNITBUSY;
 	    break;
 	}
-	case CMD_V4_CLOSE: {
-	    cmd.cmd_ack = z_valve_close(4) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
-	    break;
-	}
-	case CMD_V4_READ: {
+
+	case CMD_V4_GET: {
 	    uint16_t st;
 	    if (z_valve_get(4, &st)) { cmd.parameter = st; cmd.cmd_ack = CMR_SUCCESSFULL; }
 	    else                    { cmd.cmd_ack = CMR_COMMANDDENIED; }
 	    break;
+	}
+
+	case CMD_PUMP_SET: {
+		uint16_t p = cmd.parameter;
+	    if (p) { setStartPump(); } else { setStopPump(); }
+	    cmd.cmd_ack = CMR_SUCCESSFULL;
+	    break;
+	}
+
+	case CMD_PUMP_GET /*| CMD_PUMP_GET_STA*/: {                 // "PUM?"
+	    // return 0/1 = running
+	    //uint8_t v = pumpRunning();
+	    //cmd_reply_uint(v);              // <-- use your normal “? ” reply routine
+	    //cmd.cmd_ack = CMR_SUCCESSFULL;
+	    break;
+	}
+
+	case CMD_PUMP_GET_WAR: {             // "PUM:WAR?"
+		uint8_t v = readPumpWarning();         // collective warning bit
+		cmd.parameter = v;
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_PUMP_GET_ALA: {             // "PUM:WAR?"
+		uint8_t v = readPumpAlarm();         // collective warning bit
+		cmd.parameter = v;
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_PUMP_GET_RMT: {             // "PUM:WAR?"
+		uint8_t v = readPumpRemote();         // collective warning bit
+		cmd.parameter = v;
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
 	}
 
 	// GET SET ERR GASBOX

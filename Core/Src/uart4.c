@@ -11,6 +11,7 @@
 UartRB uart4_rb;
 UartRB uart5_rb;
 UartRB usart1_rb;
+UartRB usart2_rb;
 UartRB usart3_rb;
 
 volatile uint8_t TxBuffer[BUFLEN];
@@ -21,17 +22,19 @@ int16_t rb_free_tx(UartRB *p);
 
 // Reception interrupt
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-	uartRB_OnRxCplt(&usart3_rb, huart);
 	uartRB_OnRxCplt(&uart4_rb, huart);
 	uartRB_OnRxCplt(&uart5_rb, huart);
 	uartRB_OnRxCplt(&usart1_rb, huart);
+	uartRB_OnRxCplt(&usart2_rb, huart);
+	uartRB_OnRxCplt(&usart3_rb, huart);
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-	uartRB_OnTxCplt(&usart3_rb, huart);
 	uartRB_OnTxCplt(&uart4_rb, huart);
 	uartRB_OnTxCplt(&uart5_rb, huart);
 	uartRB_OnTxCplt(&usart1_rb, huart);
+	uartRB_OnTxCplt(&usart2_rb, huart);
+	uartRB_OnTxCplt(&usart3_rb, huart);
 }
 
 void uartRB_OnRxCplt(UartRB *p, UART_HandleTypeDef *huart) {
@@ -78,6 +81,7 @@ void uart_initAll(void) {
 	uartRB_Init(&uart4_rb, &huart4, UART4_IRQn);
 	uartRB_Init(&uart5_rb, &huart5, UART5_IRQn);
 	uartRB_Init(&usart1_rb, &huart1, USART1_IRQn);
+	uartRB_Init(&usart2_rb, &huart1, USART2_IRQn);
 	uartRB_Init(&usart3_rb, &huart3, USART3_IRQn);
 }
 

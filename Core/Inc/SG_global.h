@@ -31,13 +31,19 @@
 #define SG_ERRFS	9
 #define SG_ERRHMS	10
 
-#define SG_ERR_DIAG_OUT   11   // ISO1H816 high-side driver fault
-#define SG_ERR_DIAG_IN    12   // ISO1I811 input module fault
+#define SG_ERR_MAXVDDA   	11
+#define SG_ERR_ITL    		12
+#define SG_ERR_PUMPWARNING	13
+#define SG_ERR_PUMPALARM	14
 
 #define SG_ERRCH1	16
 #define SG_ERRCH2	17
 #define SG_ERRCH3	18
 #define SG_ERRCH4	19
+
+#define SG_ERR_DIAG_IN	20
+#define SG_ERR_DIAG_OUT	21
+
 
 #define SG_ERR_CHNMASK      0x000F0000
 #define SG_CRITICAL_ERRORS	0x00000000	// Derzeit keine kritischen Fehler, die einen Neustart erfordern

@@ -43,18 +43,32 @@ typedef struct {
 
 //Definition der ASCII-Tabelle
 static const Cmdline_Item ASCIICmdTable[] = {
-		{"DO1?", CMD_DO1_GET },
-		{"DO1",  CMD_DO1_SET },   // use "DO1 1;" or "DO1 0;" for write
-		{"DO2?", CMD_DO2_GET },
-		{"DO2",  CMD_DO2_SET },
-		{"FLOW1", CMD_MFC1_SET },
-		{"FLOW1?",CMD_MFC1_GET }, // add more: "VALV1?", "PUMP:ALARM?", etc.
-		{"FLOW2", CMD_MFC2_SET },
-		{"FLOW2?",CMD_MFC2_GET },
-		{"FLOW3", CMD_MFC3_SET },
-		{"FLOW3?",CMD_MFC3_GET },
-		{"FLOW4", CMD_MFC4_SET },
-		{"FLOW4?",CMD_MFC4_GET },
+		{"GAS:V3",  	CMD_V3_SET },
+		{"GAS:V3?", 	CMD_V3_GET },
+		{"GAS:V4", 		CMD_V4_SET },
+		{"GAS:V4?",		CMD_V4_GET },
+		{"GAS:PDE",		CMD_SET_GAS_PDE },
+		{"GAS:PDE?",	CMD_GET_GAS_PDE },
+		{"GAS:PDE:CLS",	CMD_CLOSE_GAS_PDE },
+		{"GAS:PDE:STA?",CMD_STAT_GAS_PDE },
+		{"GAS:AIR", 	CMD_SET_GAS_AIR },
+		{"GAS:AIR?",	CMD_GET_GAS_AIR },
+		{"GAS:AIR:CLS",	CMD_CLOSE_GAS_AIR },
+		{"GAS:AIR:STA?",CMD_STAT_GAS_AIR },
+		{"GAS:O2", 		CMD_SET_GAS_O2 },
+		{"GAS:O2?",		CMD_GET_GAS_O2 },
+		{"GAS:O2:CLS",	CMD_CLOSE_GAS_O2 },
+		{"GAS:O2:STA?",	CMD_STAT_GAS_O2 },
+		{"GAS:MFC4", 	CMD_SET_GAS_4 },
+		{"GAS:MFC4?",	CMD_GET_GAS_4 },
+		{"GAS:MFC4:CLS",CMD_CLOSE_GAS_4 },
+		{"GAS:MFC4:STA?",CMD_STAT_GAS_4 },
+		{"PUM", 		CMD_PUMP_SET },   // usage: "PUM 1;" or "PUM 0;"
+		{"PUM?", 		CMD_PUMP_GET },   // returns 0/1 (running)
+		{"PUM:STA?", 	CMD_PUMP_GET_STA }, // MP start/running status (DI)
+		{"PUM:WAR?", 	CMD_PUMP_GET_WAR }, // warning bit (DI)
+		{"PUM:ALA?", 	CMD_PUMP_GET_ALA }, // alarm bit (DI)
+		{"PUM:REM?", 	CMD_PUMP_GET_RMT }, // remote bit (DI)
 		};
 
 //Definition der Einstellungsparameter für die Kommunikation mit ASCII-PROTOKOLL
@@ -93,8 +107,8 @@ void remote_init(void) {
 // Pull bytes from UART4 RX ring into msg[] and feed parser
 void remote_sero_get(void) {
 	nzeichen = 0;
-	while ((rb_rx_used(&uart4_rb) > 0) && (nzeichen < RMT_MAX_PAKET_LENGTH)) {
-		msg[nzeichen++] = (uint8_t) uartRB_Getc(&uart4_rb);   // legacy getc()
+	while ((rb_rx_used(&usart2_rb) > 0) && (nzeichen < RMT_MAX_PAKET_LENGTH)) {
+		msg[nzeichen++] = (uint8_t) uartRB_Getc(&usart2_rb);   // legacy getc()
 	}
 	if (nzeichen)
 		parse_ascii();
@@ -128,7 +142,7 @@ void parse_ascii(void) {
 			if (echo == 1)// Wenn die Kommunikationsmode im Echo-Mode ist, wird es das Zeichen direkt wieder zurückgeben.
 					{
 				char1[0] = nc;
-				uartRB_Put(&uart4_rb, char1, 1);
+				uartRB_Put(&usart2_rb, char1, 1);
 			}
 		} else
 			nc = 0;
@@ -362,7 +376,7 @@ void parse_ascii(void) {
 			}
 			;
 
-			uartRB_KickTx(&uart4_rb);
+			uartRB_KickTx(&usart2_rb);
 			strcpy(cmd, "");
 			val = 0;
 			ret = 0;
@@ -416,17 +430,17 @@ void serialSendAnswer(uint8_t *message) {
 	buffer[n++] = RMT_DLE;
 	buffer[n++] = RMT_EOT;
 
-	uartRB_Put(&uart4_rb, buffer, n);
-	uartRB_KickTx(&uart4_rb);
+	uartRB_Put(&usart2_rb, buffer, n);
+	uartRB_KickTx(&usart2_rb);
 }
 
 void output_ascii_cmdack(uint8_t verbose_flg, uint8_t crlf_flg, uint8_t cmd_ack) {
 
 	if (verbose_flg > 0) {
 		if (cmd_ack == CMR_SUCCESSFULL) {
-			uartRB_Put(&uart4_rb, ">OK;", 4);
+			uartRB_Put(&usart2_rb, ">OK;", 4);
 		} else if (cmd_ack == CMR_SEMICOLONONLY) {
-			uartRB_Put(&uart4_rb, ";", 1);
+			uartRB_Put(&usart2_rb, ";", 1);
 		} else {
 			if (verbose_flg == 1) {
 				char tmp[10];
@@ -440,7 +454,7 @@ void output_ascii_cmdack(uint8_t verbose_flg, uint8_t crlf_flg, uint8_t cmd_ack)
 				}
 				strcat(tmp2, tmp);
 				strcat(tmp2, ";");
-				uartRB_Put(&uart4_rb, tmp2, strlen(tmp2));
+				uartRB_Put(&usart2_rb, tmp2, strlen(tmp2));
 			} else if (verbose_flg == 2) {
 				char tmp[35];
 				char tmp2[40];
@@ -523,7 +537,7 @@ void output_ascii_cmdack(uint8_t verbose_flg, uint8_t crlf_flg, uint8_t cmd_ack)
 
 				strcat(tmp2, tmp);
 				strcat(tmp2, ";");
-				uartRB_Put(&uart4_rb, tmp2, strlen(tmp2));
+				uartRB_Put(&usart2_rb, tmp2, strlen(tmp2));
 			}
 		}
 	} else {
@@ -531,18 +545,18 @@ void output_ascii_cmdack(uint8_t verbose_flg, uint8_t crlf_flg, uint8_t cmd_ack)
 			//if (((cmd_ack & 0x80) == CMR_SUCCESSFULL))
 			if ((cmd_ack == CMR_SEMICOLONONLY)
 					|| ((cmd_ack & 0x80) == CMR_SUCCESSFULL))
-				uartRB_Put(&uart4_rb, ";", 1);
+				uartRB_Put(&usart2_rb, ";", 1);
 
 		};
 	}
 
 	if ((crlf_flg & 0x01) > 0) {	//crlf_char= "\r";        //d.h. CR
-		uartRB_Put(&uart4_rb, "\r", 1);
+		uartRB_Put(&usart2_rb, "\r", 1);
 	}
 	if ((crlf_flg & 0x02) > 0) {	//*crlf_char=";
-		uartRB_Put(&uart4_rb, "\n", 1);
+		uartRB_Put(&usart2_rb, "\n", 1);
 	}
-	uartRB_KickTx(&uart4_rb);
+	uartRB_KickTx(&usart2_rb);
 }
 
 //Die interne Befehlnummer werden für den eingegebenen Befehl zurückgeliefert.
@@ -634,8 +648,8 @@ void output_binary_result(stack_item *cmd) {
 void output_ascii(int32_t val) {
 	char tmp[34];
 	sprintf(tmp, "%-ld", val);
-	uartRB_Put(&uart4_rb, tmp, strlen(tmp));
-	uartRB_KickTx(&uart4_rb);
+	uartRB_Put(&usart2_rb, tmp, strlen(tmp));
+	uartRB_KickTx(&usart2_rb);
 }
 
 uint8_t remote_ascii_verbose(void) {

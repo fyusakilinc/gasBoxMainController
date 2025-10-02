@@ -1,3 +1,0 @@
-../Core/Src/priority_pushpop.c:26:9:priolist_push	6
-../Core/Src/priority_pushpop.c:56:6:priolist_node_insert	4
-../Core/Src/priority_pushpop.c:83:9:priolist_pop	2

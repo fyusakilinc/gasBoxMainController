@@ -1,8 +1,0 @@
-../Core/Src/stacks.c:36:6:stacks_init	3
-../Core/Src/stacks.c:58:9:stacks_insert_cmd	3
-../Core/Src/stacks.c:88:9:z_mc_stack_insert	11
-../Core/Src/stacks.c:177:9:stack_insert_sero	1
-../Core/Src/stacks.c:190:9:mcstack_pop	4
-../Core/Src/stacks.c:229:9:zstack_pop	3
-../Core/Src/stacks.c:262:9:zstackindex_list_act_get	1
-../Core/Src/stacks.c:267:9:mcstackindex_list_act_get	1

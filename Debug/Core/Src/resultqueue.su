@@ -1,6 +1,0 @@
-../Core/Src/resultqueue.c:33:6:resultQueue_init	4	static
-../Core/Src/resultqueue.c:39:9:get_anzFrei_resultQueue	16	static
-../Core/Src/resultqueue.c:51:9:get_anzBes_resultQueue	16	static
-../Core/Src/resultqueue.c:61:9:resultQueue_push	40	static
-../Core/Src/resultqueue.c:81:6:resultQueue_pop	32	static
-../Core/Src/resultqueue.c:94:6:result_get_sero	32	static

@@ -1,7 +1,0 @@
-../Core/Src/gasbox.c:60:6:gb_sero_get	16	static
-../Core/Src/gasbox.c:71:13:parse_binary_gasbox	24	static
-../Core/Src/gasbox.c:180:23:gb_sum8	24	static
-../Core/Src/gasbox.c:186:20:gb_push_escaped	16	static
-../Core/Src/gasbox.c:196:9:gasbox_send	48	static
-../Core/Src/gasbox.c:230:6:gb_on_frame	16	static
-../Core/Src/gasbox.c:246:9:gasbox_xfer	32	static

@@ -34,7 +34,8 @@ Core/Src/ad5592.o: ../Core/Src/ad5592.c ../Core/Inc/ad5592.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_tim_ex.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart_ex.h \
- ../Core/Inc/gpio.h ../Core/Inc/spi.h ../Core/Inc/func.h
+ ../Core/Inc/gpio.h ../Core/Inc/spi.h ../Core/Inc/func.h \
+ ../Core/Inc/tim.h ../Core/Inc/timer0.h
 ../Core/Inc/ad5592.h:
 ../Core/Inc/spi.h:
 ../Core/Inc/main.h:
@@ -75,3 +76,5 @@ Core/Src/ad5592.o: ../Core/Src/ad5592.c ../Core/Inc/ad5592.h \
 ../Core/Inc/gpio.h:
 ../Core/Inc/spi.h:
 ../Core/Inc/func.h:
+../Core/Inc/tim.h:
+../Core/Inc/timer0.h:

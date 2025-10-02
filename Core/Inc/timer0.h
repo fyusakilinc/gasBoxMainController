@@ -15,6 +15,18 @@ uint8_t ct_hbeat_null(void);
 // HEARTBEAT Stoppuhr setzen
 void set_ct_hbeat(uint16_t);
 
+// HEARTBEAT Stoppuhr abfragen
+uint8_t ct_mio_hbeat_null(void);
+
+// HEARTBEAT Stoppuhr setzen
+void set_ct_mio_hbeat(uint16_t);
+
+// HEARTBEAT Stoppuhr abfragen
+uint8_t ct_mcp_hbeat_null(void);
+
+// HEARTBEAT Stoppuhr setzen
+void set_ct_mcp_hbeat(uint16_t);
+
 // INIT Stoppuhr abfragen
 uint8_t ct_init_null(void);
 

@@ -1,0 +1,10 @@
+../Core/Src/mcp.c:51:20:MCP_RESET_Pulse	8	static
+../Core/Src/mcp.c:59:19:mcp_init	16	static
+../Core/Src/mcp.c:91:6:mcp_sero_get	16	static
+../Core/Src/mcp.c:105:6:mcp_sero_set	8	static
+../Core/Src/mcp.c:113:20:mcp_hb_toggle	8	static
+../Core/Src/mcp.c:120:9:mcp_diag_read_b_raw	16	static
+../Core/Src/mcp.c:128:19:mcp_set_sps_out_disable	24	static
+../Core/Src/mcp.c:136:26:mcp_write_reg	24	static
+../Core/Src/mcp.c:147:26:mcp_read_reg	32	static
+../Core/Src/mcp.c:160:26:mcp_update_bits	24	static

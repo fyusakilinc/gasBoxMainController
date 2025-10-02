@@ -2,6 +2,8 @@
 #include "gpio.h"
 #include "spi.h"
 #include "func.h"
+#include "tim.h"
+#include "timer0.h"
 
 extern SPI_HandleTypeDef hspi1;
 
@@ -13,9 +15,10 @@ static uint16_t adc_val[MIO_CHN_COUNT][MIO_AVRG_LEN];
 static uint8_t  adc_val_ptr[MIO_CHN_COUNT];
 static uint16_t DACS = (1<<MIO_DAC0);
 static uint16_t ADCS = (1<<MIO_ADC0);
+#define MIO_GPIO_HB_PIN   3
+#define MIO_GPIO_HB_BIT   (1u << MIO_GPIO_HB_PIN)
+static uint8_t mio_gpio_out_shadow = 0x00; // shadow of AD5592 GPIO outputs
 
-static inline void MIO_CS_L(void){ HAL_GPIO_WritePin(UC_CS_AUX0_GPIO_Port, UC_CS_AUX0_Pin, GPIO_PIN_RESET); }
-static inline void MIO_CS_H(void){ HAL_GPIO_WritePin(UC_CS_AUX0_GPIO_Port, UC_CS_AUX0_Pin, GPIO_PIN_SET); }
 
 static inline void MIO_RESET_Pulse(void){
     // Optional reset pulse like your AVR did
@@ -41,7 +44,7 @@ void mio_init(void)
     mio_send_word(AD5592R_CMD_ADC_PIN_SELECT | ADCS);
     mio_send_word(AD5592R_CMD_DAC_PIN_SELECT | DACS);
     mio_send_word(AD5592R_CMD_PULL_DOWN_SET);
-    mio_send_word(AD5592R_CMD_GPIO_WRITE_CONFIG);
+    mio_send_word(AD5592R_CMD_GPIO_WRITE_CONFIG | MIO_GPIO_HB_BIT);
     mio_send_word(AD5592R_CMD_GPIO_READ_CONFIG);
     mio_send_word(AD5592R_CMD_GPIO_DRAIN_CONFIG);
     mio_send_word(AD5592R_CMD_THREE_STATE_CONFIG);
@@ -66,10 +69,20 @@ void mio_init(void)
 	}
     // init set
 	mio_set_dac(MIO_DAC0, 0);
+	// Set initial GPIO output levels (HB off -> 0)
+	mio_send_word(AD5592R_CMD_GPIO_WRITE_DATA | mio_gpio_out_shadow);
 }
 
-void mio_sero_set(void)
-{
+void mio_hb_toggle(void) {
+    mio_gpio_out_shadow ^= MIO_GPIO_HB_BIT;
+    mio_send_word(AD5592R_CMD_GPIO_WRITE_DATA | (mio_gpio_out_shadow & 0xFF));     // single 16-bit write to AD5592
+}
+
+void mio_sero_set(void) {
+	if (ct_mio_hbeat_null() == 1) {          // same timer API
+		set_ct_mio_hbeat(500);               // 500 ms -> ~1 Hz blink
+		mio_hb_toggle();                 // AD5592 heartbeat toggle
+	}
 }
 
 void mio_sero_get(void)

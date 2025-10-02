@@ -7,4 +7,4 @@
 ../Core/Src/spi.c:146:6:spi_access_device	1
 ../Core/Src/spi.c:151:6:spi_release_device	1
 ../Core/Src/spi.c:156:6:_spi_access_device	8
-../Core/Src/spi.c:205:6:spi_set_cs	9
+../Core/Src/spi.c:210:6:spi_set_cs	10

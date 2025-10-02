@@ -44,6 +44,9 @@ extern "C" {
 #define spi_sps_in			3
 #define spi_sps_in_cs		3
 
+#define spi_mcp			4
+#define spi_mcp_cs		4
+
 #define spi_cs_all_off	255
 /* USER CODE END Includes */
 

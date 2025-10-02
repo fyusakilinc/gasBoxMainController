@@ -3,13 +3,6 @@
 #include "main.h"
 #include "spi.h"
 
-// GPIO helpers
-static inline void ISO_CS_OUT_L(void){ HAL_GPIO_WritePin(UC_CS_SPS_OUT_GPIO_Port, UC_CS_SPS_OUT_Pin, GPIO_PIN_RESET); }
-static inline void ISO_CS_OUT_H(void){ HAL_GPIO_WritePin(UC_CS_SPS_OUT_GPIO_Port, UC_CS_SPS_OUT_Pin, GPIO_PIN_SET); }
-
-static inline void ISO_CS_IN_L(void){ HAL_GPIO_WritePin(UC_CS_SPS_IN_GPIO_Port, UC_CS_SPS_IN_Pin, GPIO_PIN_RESET); }
-static inline void ISO_CS_IN_H(void){ HAL_GPIO_WritePin(UC_CS_SPS_IN_GPIO_Port, UC_CS_SPS_IN_Pin, GPIO_PIN_SET); }
-
 
 HAL_StatusTypeDef isoWrite(uint8_t pattern)
 {

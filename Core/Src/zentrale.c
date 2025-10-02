@@ -9,6 +9,7 @@
 #include "protocoll.h"
 #include "SG_global.h"
 #include "gasbox.h"
+#include "mcp.h"
 
 //-----------------PRIVATE-BEREICH---------------------------------------------
 
@@ -56,6 +57,7 @@ static void z_update_power_errors(void) {
 	}
 }
 
+
 // Zentrale denken und entscheiden.
 void zentrale(void) {	// ----- DENKEN -----
 
@@ -77,6 +79,7 @@ void zentrale(void) {	// ----- DENKEN -----
 	case ZERROR:
 		if (z_status_h != ZERROR) {				// add what to do when error
 			z_status_h = ZERROR;
+			mcp_set_sps_out_disable(1);
 			z_rf_state = 0;
 		}
 
@@ -98,6 +101,7 @@ void zentrale(void) {	// ----- DENKEN -----
 		default:
 			break;
 		}
+
 		z_status_tend = NOP;                         // Status_tend zurücksetzen
 		break;
 
@@ -147,6 +151,7 @@ void zentrale(void) {	// ----- DENKEN -----
 	case ACTIVE:
 		if (z_status_h != ACTIVE) {
 			z_rf_state = 1;
+			mcp_set_sps_out_disable(0);
 			z_status_h = ACTIVE;
 		}
 

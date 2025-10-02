@@ -191,6 +191,10 @@ void _spi_access_device(uint8_t device, uint8_t status) {
 		case spi_sps_out:
 			spi_set_cs(spi_sps_out_cs, spi_select_device);
 			break;
+		case spi_mcp:
+			// High-Speed SPI Interface (MCP23S17): - 10 MHz (maximum) baud pre-scaler might needs to be changed
+			spi_set_cs(spi_mcp_cs, spi_select_device);
+			break;
 
 		default:
 			break;
@@ -199,6 +203,7 @@ void _spi_access_device(uint8_t device, uint8_t status) {
 		spi_set_cs(spi_mio_cs, spi_deselect_device);
 		spi_set_cs(spi_sps_out_cs, spi_deselect_device);
 		spi_set_cs(spi_sps_in_cs, spi_deselect_device);
+		spi_set_cs(spi_mcp_cs, spi_deselect_device);
 	}
 }
 
@@ -230,6 +235,13 @@ void spi_set_cs(uint8_t cs, uint8_t state)
 				HAL_GPIO_WritePin(UC_CS_SPS_IN_GPIO_Port, UC_CS_SPS_IN_Pin,	GPIO_PIN_SET);
 			break;
 
+		case spi_mcp_cs:
+			if (state == spi_select_device)
+				HAL_GPIO_WritePin(UC_CS_AUX1_GPIO_Port, UC_CS_AUX1_Pin,	GPIO_PIN_RESET);
+			else
+				HAL_GPIO_WritePin(UC_CS_AUX1_GPIO_Port, UC_CS_AUX1_Pin,	GPIO_PIN_SET);
+			break;
+
 			default:
 				break;
 		}
@@ -240,6 +252,7 @@ void spi_set_cs(uint8_t cs, uint8_t state)
 		HAL_GPIO_WritePin(UC_CS_AUX0_GPIO_Port, UC_CS_AUX0_Pin, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(UC_CS_SPS_OUT_GPIO_Port, UC_CS_SPS_OUT_Pin,	GPIO_PIN_SET);
 		HAL_GPIO_WritePin(UC_CS_SPS_IN_GPIO_Port, UC_CS_SPS_IN_Pin,	GPIO_PIN_SET);
+		HAL_GPIO_WritePin(UC_CS_AUX1_GPIO_Port, UC_CS_AUX1_Pin,	GPIO_PIN_SET);
 	}
 }
 /* USER CODE END 1 */

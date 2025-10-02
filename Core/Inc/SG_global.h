@@ -31,6 +31,9 @@
 #define SG_ERRFS	9
 #define SG_ERRHMS	10
 
+#define SG_ERR_DIAG_OUT   11   // ISO1H816 high-side driver fault
+#define SG_ERR_DIAG_IN    12   // ISO1I811 input module fault
+
 #define SG_ERRCH1	16
 #define SG_ERRCH2	17
 #define SG_ERRCH3	18

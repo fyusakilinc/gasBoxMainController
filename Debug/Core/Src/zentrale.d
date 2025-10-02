@@ -36,7 +36,7 @@ Core/Src/zentrale.o: ../Core/Src/zentrale.c ../Core/Inc/zentrale.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart_ex.h \
  ../Core/Inc/uart4.h ../Core/Inc/main.h ../Core/Inc/timer0.h \
  ../Core/Inc/hardware.h ../Core/Inc/protocoll.h ../Core/Inc/SG_global.h \
- ../Core/Inc/gasbox.h
+ ../Core/Inc/gasbox.h ../Core/Inc/mcp.h
 ../Core/Inc/zentrale.h:
 ../Core/Inc/cmdlist.h:
 ../Core/Inc/main.h:
@@ -81,3 +81,4 @@ Core/Src/zentrale.o: ../Core/Src/zentrale.c ../Core/Inc/zentrale.h \
 ../Core/Inc/protocoll.h:
 ../Core/Inc/SG_global.h:
 ../Core/Inc/gasbox.h:
+../Core/Inc/mcp.h:

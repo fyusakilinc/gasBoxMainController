@@ -8,6 +8,8 @@
 
 volatile static uint16_t ct_start=0;
 volatile static uint16_t ct_hbeat=0;
+volatile static uint16_t ct_mio_hbeat=0;
+volatile static uint16_t ct_mcp_hbeat=0;
 volatile static uint16_t ct_init=0;
 
 volatile static uint16_t ct_hbeat_slv=0;
@@ -26,6 +28,8 @@ void timer0_incTick(void)
 {
 	if (ct_start) ct_start--;
     if (ct_hbeat) ct_hbeat--;
+    if (ct_mio_hbeat) ct_mio_hbeat--;
+    if (ct_mcp_hbeat) ct_mcp_hbeat--;
     if (ct_init) ct_init--;
     if(ct_rst_err) ct_rst_err--;
     if(ct_rst_dev) ct_rst_dev--;
@@ -81,6 +85,38 @@ void set_ct_hbeat(uint16_t ct_hbeatval)
 uint8_t ct_hbeat_null(void)
 {
     uint16_t tmp = ct_hbeat;
+
+    if (tmp <= 0) return 1;
+    else return 0;
+}
+
+// HEARTBEAT Stoppuhr setzen
+void set_ct_mio_hbeat(uint16_t ct_mio_hbeatval)
+{
+    ct_mio_hbeat = ct_mio_hbeatval;
+
+}
+
+// HEARTBEAT Stoppuhr abfragen
+uint8_t ct_mio_hbeat_null(void)
+{
+    uint16_t tmp = ct_mio_hbeat;
+
+    if (tmp <= 0) return 1;
+    else return 0;
+}
+
+// HEARTBEAT Stoppuhr setzen
+void set_ct_mcp_hbeat(uint16_t ct_mcp_hbeatval)
+{
+    ct_mcp_hbeat = ct_mcp_hbeatval;
+
+}
+
+// HEARTBEAT Stoppuhr abfragen
+uint8_t ct_mcp_hbeat_null(void)
+{
+    uint16_t tmp = ct_mcp_hbeat;
 
     if (tmp <= 0) return 1;
     else return 0;

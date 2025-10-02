@@ -153,51 +153,52 @@ void spi_release_device(uint8_t device)
 	 _spi_access_device(device, spi_deselect_device);
 }
 
-void _spi_access_device(uint8_t device, uint8_t status)
-{
-	SPI_HandleTypeDef* spiHandle;
+void _spi_access_device(uint8_t device, uint8_t status) {
+	SPI_HandleTypeDef *spiHandle;
 
-	if(status==spi_select_device)
-	{
-		switch(device)
-		{
-			case spi_dds:
-				// DDS is connected to SPI4
-				spiHandle = &hspi1;
-
-				/*Prior to changing the CPOL/CPHA bits the SPI must be disabled by resetting the SPE bit*/
-				if(HAL_SPI_DeInit(spiHandle) != HAL_OK)
-				{
-					Error_Handler();
-				}
-				//load configurations for DDS
-				spiHandle->Instance = SPI1;
-				spiHandle->Init.Mode = SPI_MODE_MASTER;
-				spiHandle->Init.Direction = SPI_DIRECTION_2LINES;
-				spiHandle->Init.DataSize = SPI_DATASIZE_8BIT;
-				spiHandle->Init.CLKPolarity = SPI_POLARITY_LOW;
-				spiHandle->Init.CLKPhase = SPI_PHASE_1EDGE;
-				spiHandle->Init.NSS = SPI_NSS_SOFT;
-				spiHandle->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
-				spiHandle->Init.FirstBit = SPI_FIRSTBIT_MSB;
-				spiHandle->Init.TIMode = SPI_TIMODE_DISABLE;
-				spiHandle->Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-				spiHandle->Init.CRCPolynomial = 7;
-				spiHandle->Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-				spiHandle->Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
-				if (HAL_SPI_Init(spiHandle) != HAL_OK)
-				{
-					Error_Handler();
-				}
-				spi_set_cs(spi_mio_cs, spi_select_device);
-				break;
-			default:
-				break;
+	if (status == spi_select_device) {
+		spiHandle = &hspi1;
+		/*Prior to changing the CPOL/CPHA bits the SPI must be disabled by resetting the SPE bit*/
+		if (HAL_SPI_DeInit(spiHandle) != HAL_OK) {
+			Error_Handler();
 		}
-	}
-	else
-	{
+
+		spiHandle->Instance = SPI1;
+		spiHandle->Init.Mode = SPI_MODE_MASTER;
+		spiHandle->Init.Direction = SPI_DIRECTION_2LINES;
+		spiHandle->Init.DataSize = SPI_DATASIZE_8BIT;
+		spiHandle->Init.CLKPolarity = SPI_POLARITY_LOW;
+		spiHandle->Init.CLKPhase = SPI_PHASE_1EDGE;
+		spiHandle->Init.NSS = SPI_NSS_SOFT;
+		spiHandle->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
+		spiHandle->Init.FirstBit = SPI_FIRSTBIT_MSB;
+		spiHandle->Init.TIMode = SPI_TIMODE_DISABLE;
+		spiHandle->Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+		spiHandle->Init.CRCPolynomial = 7;
+		spiHandle->Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+		spiHandle->Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+		if (HAL_SPI_Init(spiHandle) != HAL_OK) {
+			Error_Handler();
+		}
+
+		switch (device) {
+		case spi_mio:
+			spi_set_cs(spi_mio_cs, spi_select_device);
+			break;
+		case spi_sps_in:
+			spi_set_cs(spi_sps_in_cs, spi_select_device);
+			break;
+		case spi_sps_out:
+			spi_set_cs(spi_sps_out_cs, spi_select_device);
+			break;
+
+		default:
+			break;
+		}
+	} else {
 		spi_set_cs(spi_mio_cs, spi_deselect_device);
+		spi_set_cs(spi_sps_out_cs, spi_deselect_device);
+		spi_set_cs(spi_sps_in_cs, spi_deselect_device);
 	}
 }
 
@@ -208,12 +209,26 @@ void spi_set_cs(uint8_t cs, uint8_t state)
 		// Chipselect aktivieren
 		switch(cs)
 		{
-			case spi_mio_cs:
-				if(state==spi_select_device)
-					HAL_GPIO_WritePin(UC_CS_AUX0_GPIO_Port, UC_CS_AUX0_Pin, GPIO_PIN_RESET);
-				else
-					HAL_GPIO_WritePin(UC_CS_AUX0_GPIO_Port, UC_CS_AUX0_Pin, GPIO_PIN_SET);
-				break;
+		case spi_mio_cs:
+			if (state == spi_select_device)
+				HAL_GPIO_WritePin(UC_CS_AUX0_GPIO_Port, UC_CS_AUX0_Pin,	GPIO_PIN_RESET);
+			else
+				HAL_GPIO_WritePin(UC_CS_AUX0_GPIO_Port, UC_CS_AUX0_Pin,	GPIO_PIN_SET);
+			break;
+
+		case spi_sps_out_cs:
+			if (state == spi_select_device)
+				HAL_GPIO_WritePin(UC_CS_SPS_OUT_GPIO_Port, UC_CS_SPS_OUT_Pin,	GPIO_PIN_RESET);
+			else
+				HAL_GPIO_WritePin(UC_CS_SPS_OUT_GPIO_Port, UC_CS_SPS_OUT_Pin,	GPIO_PIN_SET);
+			break;
+
+		case spi_sps_in_cs:
+			if (state == spi_select_device)
+				HAL_GPIO_WritePin(UC_CS_SPS_IN_GPIO_Port, UC_CS_SPS_IN_Pin,	GPIO_PIN_RESET);
+			else
+				HAL_GPIO_WritePin(UC_CS_SPS_IN_GPIO_Port, UC_CS_SPS_IN_Pin,	GPIO_PIN_SET);
+			break;
 
 			default:
 				break;
@@ -223,6 +238,8 @@ void spi_set_cs(uint8_t cs, uint8_t state)
 	{
 		// Chip selects off
 		HAL_GPIO_WritePin(UC_CS_AUX0_GPIO_Port, UC_CS_AUX0_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(UC_CS_SPS_OUT_GPIO_Port, UC_CS_SPS_OUT_Pin,	GPIO_PIN_SET);
+		HAL_GPIO_WritePin(UC_CS_SPS_IN_GPIO_Port, UC_CS_SPS_IN_Pin,	GPIO_PIN_SET);
 	}
 }
 /* USER CODE END 1 */

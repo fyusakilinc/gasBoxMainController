@@ -40,7 +40,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Core/Inc/timer0.h ../Core/Inc/func.h ../Core/Inc/prioritylist.h \
  ../Core/Inc/priority_pushpop.h ../Core/Inc/stacks.h \
  ../Core/Inc/resultqueue.h ../Core/Inc/zentrale_cmd_sero.h \
- ../Core/Inc/gasbox.h
+ ../Core/Inc/gasbox.h ../Core/Inc/ad5592.h ../Core/Inc/spi.h
 ../Core/Inc/main.h:
 ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal.h:
 ../Core/Inc/stm32g4xx_hal_conf.h:
@@ -97,3 +97,5 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Inc/resultqueue.h:
 ../Core/Inc/zentrale_cmd_sero.h:
 ../Core/Inc/gasbox.h:
+../Core/Inc/ad5592.h:
+../Core/Inc/spi.h:

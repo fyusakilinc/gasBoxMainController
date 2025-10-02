@@ -13,17 +13,21 @@ static inline void ISO_CS_IN_H(void){ HAL_GPIO_WritePin(UC_CS_SPS_IN_GPIO_Port, 
 
 HAL_StatusTypeDef isoWrite(uint8_t pattern)
 {
-    ISO_CS_OUT_L();
+	HAL_NVIC_DisableIRQ(SPI1_IRQn);
+    spi_access_device(spi_sps_out);
     HAL_StatusTypeDef st = HAL_SPI_Transmit(&hspi1, &pattern, 1, 10);
-    ISO_CS_OUT_H();                  // latch on rising CS with 8 clocks done
+    spi_release_device(spi_sps_out);
+    HAL_NVIC_EnableIRQ(SPI1_IRQn);
     return st;
 }
 
 uint16_t iso_read_in_raw(void) {
+	HAL_NVIC_DisableIRQ(SPI1_IRQn);
     uint8_t tx[2] = {0x00, 0x00}, rx[2] = {0,0};
-    ISO_CS_IN_L();
+    spi_access_device(spi_sps_in);
     HAL_SPI_TransmitReceive(&hspi1, tx, rx, 2, 10);
-    ISO_CS_IN_H();
+    spi_release_device(spi_sps_in);
+    HAL_NVIC_EnableIRQ(SPI1_IRQn);
     return ((uint16_t)rx[0] << 8) | rx[1];     // status + inputs
 }
 

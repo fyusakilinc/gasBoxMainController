@@ -39,6 +39,7 @@
 #include "resultqueue.h"
 #include "zentrale_cmd_sero.h"
 #include "gasbox.h"
+#include "ad5592.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -119,6 +120,7 @@ int main(void)
   uart_initAll();
   remote_init();
   zentrale_init();
+  mio_init();
 
   delay_ms(500);
   /* USER CODE END 2 */
@@ -134,11 +136,13 @@ int main(void)
 		remote_sero_get();
 		gb_sero_get();
 		result_get_sero();
+		mio_sero_get();
 
 		zentrale();
 
 		result_get_sero();
 		hw_sero_set();
+		mio_sero_set();
 		z_cmd_scheduler();
   }
   /* USER CODE END 3 */

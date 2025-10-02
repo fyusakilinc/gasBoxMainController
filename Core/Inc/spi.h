@@ -38,6 +38,12 @@ extern "C" {
 #define spi_mio			1
 #define spi_mio_cs		1
 
+#define spi_sps_out			2
+#define spi_sps_out_cs		2
+
+#define spi_sps_in			3
+#define spi_sps_in_cs		3
+
 #define spi_cs_all_off	255
 /* USER CODE END Includes */
 

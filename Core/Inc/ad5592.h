@@ -7,15 +7,8 @@
 #define MIO_DO_LED			2
 #define MIO_HBLED			2
 
-#define MIO_ADC0			1
-#define MIO_ADC1			3
-#define MIO_ADC2			5
-#define MIO_ADC3			7
-
-#define MIO_DAC0			0
-#define MIO_DAC1			2
-#define MIO_DAC2			4
-#define MIO_DAC3			6
+#define MIO_ADC0			0
+#define MIO_DAC0			1
 
 
 #define AD5592R_INT_REF_mV          2500
@@ -58,6 +51,10 @@
 #define AD5592R_ADC_TT_VREF             0x0010  /* Set ADC input range to 2 times Vref */
 #define AD5592R_DAC_TT_VREF             0x0020  /* Set DAC output range to 2 times Vref */
 
+#define TMIN 							0
+#define TMAX							100    /* max and min t values */
+#define VREF 							4095
+
 
 //--- PUBLIC FUNKTIONSDEKLARATION -------------------------------------------------------------------------------------------
 // Initialize the Modules
@@ -73,6 +70,9 @@ void mio_set_dac(uint8_t, uint16_t);
 uint16_t mio_get_adcval_filt(uint8_t);
 uint16_t mio_readback_dac(uint8_t);
 uint16_t read_adc_single(uint8_t);
+
+int set_TC_STP(float SP);
+float get_TIST(void);
 
 
 #endif /* AD5592_H_ */

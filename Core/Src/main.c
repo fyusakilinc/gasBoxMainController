@@ -143,10 +143,10 @@ int main(void)
 
 		zentrale();
 
+		z_cmd_scheduler();
 		hw_sero_set();
 		mio_sero_set();
 		mcp_sero_set();
-		z_cmd_scheduler();
   }
   /* USER CODE END 3 */
 }

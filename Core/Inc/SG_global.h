@@ -44,6 +44,8 @@
 #define SG_ERR_DIAG_IN	20
 #define SG_ERR_DIAG_OUT	21
 
+#define SG_ERR_TC_SETPOINT_TIMEOUT	22
+
 
 #define SG_ERR_CHNMASK      0x000F0000
 #define SG_CRITICAL_ERRORS	0x00000000	// Derzeit keine kritischen Fehler, die einen Neustart erfordern

@@ -75,10 +75,10 @@ void Error_Handler(void);
 #define UC_CS_AUX1_GPIO_Port GPIOF
 #define UC_CS_AUX0_Pin GPIO_PIN_4
 #define UC_CS_AUX0_GPIO_Port GPIOA
+#define UC_CS_SPS_IN_Pin GPIO_PIN_0
+#define UC_CS_SPS_IN_GPIO_Port GPIOB
 #define UC_CS_SPS_OUT_Pin GPIO_PIN_1
 #define UC_CS_SPS_OUT_GPIO_Port GPIOB
-#define UC_CS_SPS_IN_Pin GPIO_PIN_2
-#define UC_CS_SPS_IN_GPIO_Port GPIOB
 #define UC_AUX_RESET_Pin GPIO_PIN_9
 #define UC_AUX_RESET_GPIO_Port GPIOE
 #define MAX_VDDA_OK_Pin GPIO_PIN_10

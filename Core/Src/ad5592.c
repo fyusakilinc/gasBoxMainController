@@ -4,7 +4,9 @@
 #include "func.h"
 #include "tim.h"
 #include "timer0.h"
-
+#include "zentrale.h"
+#include "SG_global.h"
+#include <math.h>
 extern SPI_HandleTypeDef hspi1;
 
 
@@ -112,27 +114,6 @@ void mio_sero_get(void)
 				adc_val_ptr[MIO_ADC0] = 0;
 		break;
 
-		case MIO_ADC1:
-			adc_val[MIO_ADC1][adc_val_ptr[MIO_ADC1]] = tmp;
-			adc_val_ptr[MIO_ADC1]++;
-			if(adc_val_ptr[MIO_ADC1] > MIO_AVRG_LEN)
-				adc_val_ptr[MIO_ADC1] = 0;
-		break;
-
-		case MIO_ADC2:
-			adc_val[MIO_ADC2][adc_val_ptr[MIO_ADC2]] = tmp;
-			adc_val_ptr[MIO_ADC2]++;
-			if(adc_val_ptr[MIO_ADC2] > MIO_AVRG_LEN)
-				adc_val_ptr[MIO_ADC2] = 0;
-		break;
-
-		case MIO_ADC3:
-			adc_val[MIO_ADC3][adc_val_ptr[MIO_ADC3]] = tmp;
-			adc_val_ptr[MIO_ADC3]++;
-			if(adc_val_ptr[MIO_ADC3] > MIO_AVRG_LEN)
-				adc_val_ptr[MIO_ADC3] = 0;
-		break;
-
 		default:
 		break;
 	}
@@ -209,5 +190,49 @@ uint16_t mio_readback_dac(uint8_t ch) {
 	spi_release_device(spi_mio);      // CS high
 	HAL_NVIC_EnableIRQ(SPI1_IRQn);
 	return val;  // only the lower 12 bits are valid
+}
+
+int set_TC_STP(float SP) {
+	float frac = ((float)SP - TMIN) / (TMAX - TMIN);
+	if (frac < 0)
+		frac = 0;
+	else if (frac > 1)
+		frac = 1;
+
+	uint16_t stp_ad = (uint16_t) lroundf(frac * 0xFFF);
+	mio_set_dac(MIO_DAC0, stp_ad);
+
+
+	// from here can be commented out, this reads the data for timeout ms and raises an error if tol not achieved for 3 ok read
+	uint16_t timeout_ms = 1000;
+	float tolC = 0.5f;
+	uint32_t t0 = HAL_GetTick();
+	uint8_t ok = 0;
+	while ((HAL_GetTick() - t0) < timeout_ms) {
+		float pv = (float) get_TIST();
+		if (fabsf(pv - SP) <= tolC) {
+			if (++ok >= 3) // needs to read for 3 times
+				return 1;  // success
+		} else {
+			ok = 0; // not stable yet, reset consecutive counter
+		}
+		HAL_Delay(5);
+	}
+
+	z_set_error(SG_ERR_TC_SETPOINT_TIMEOUT);
+	return 0;
+
+}
+
+float get_TIST(void) {
+	uint16_t read = mio_get_adcval_filt(MIO_ADC0);
+	float frac = (float)read / 0xFFF;
+	if (frac < 0)
+			frac = 0;
+		else if (frac > 1)
+			frac = 1;
+	float tist = (float) lroundf(frac * (TMAX-TMIN) + TMIN);
+
+	return tist;
 }
 

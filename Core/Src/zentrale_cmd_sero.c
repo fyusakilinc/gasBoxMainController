@@ -14,6 +14,7 @@
 #include "func.h"
 #include "hardware.h"
 #include "gasbox.h"
+#include "ad5592.h"
 
 
 //--- PRIVATE DEFINES -------------------------------------------------------------------------------------------------------
@@ -224,16 +225,30 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 
-	case CMD_PUMP_GET_ALA: {             // "PUM:WAR?"
-		uint8_t v = readPumpAlarm();         // collective warning bit
+	case CMD_PUMP_GET_ALA: {
+		uint8_t v = readPumpAlarm();
 		cmd.parameter = v;
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
-	case CMD_PUMP_GET_RMT: {             // "PUM:WAR?"
-		uint8_t v = readPumpRemote();         // collective warning bit
+	case CMD_PUMP_GET_RMT: {
+		uint8_t v = readPumpRemote();
 		cmd.parameter = v;
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_SET_T: {		// assume temperature values are 10 times the wanted values. so 120 means 12.0 C here to be able to use floats
+		float v = cmd.parameter/10.0f;
+		set_TC_STP(v);
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_GET_T: {
+		float v = get_TIST();
+		cmd.parameter = (uint32_t)v*10;
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}

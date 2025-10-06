@@ -69,6 +69,36 @@ static const Cmdline_Item ASCIICmdTable[] = {
 		{"PUM:WAR?", 	CMD_PUMP_GET_WAR }, // warning bit (DI)
 		{"PUM:ALA?", 	CMD_PUMP_GET_ALA }, // alarm bit (DI)
 		{"PUM:REM?", 	CMD_PUMP_GET_RMT }, // remote bit (DI)
+		{"CHA:T", 		CMD_SET_T }, 		// set chamber temp
+		{"CHA:T?", 		CMD_GET_T }, 		// get chamber temp
+		{"APC:CTL",		CMD_APC_CTL},
+		{"APC:AMD?",	CMD_APC_AMD_RD },
+		{"APC:AMD",		CMD_APC_AMD },
+		{"APC:CTL:SEL?",CMD_APC_CTL_SEL_RD },
+		{"APC:CTL:SEL",	CMD_APC_CTL_SEL },
+		{"APC:ERN",		CMD_APC_ERN_RD },
+		{"APC:ERC",		CMD_APC_ERC_RD },
+		{"APC:VAL",		CMD_APC_VAL },
+		{"APC:VAL?",	CMD_APC_VAL_RD },
+		{"APC:POS",		CMD_APC_POS },
+		{"APC:POS?",	CMD_APC_POS_RD },
+		{"APC:POS:SPD",	CMD_APC_POS_SPD },
+		{"APC:POS:SPD?",CMD_APC_POS_SPD_RD },
+		{"APC:RAM",		CMD_APC_POS_RAM },
+		{"APC:RAM?",	CMD_APC_POS_RAM_RD },
+		{"APC:RAM:TI",	CMD_APC_POS_TI },
+		{"APC:RAM:TI?",	CMD_APC_POS_TI_RD },
+		{"APC:RAM:SLP",	CMD_APC_POS_SLP },
+		{"APC:RAM:SLP?",CMD_APC_POS_SLP_RD },
+		{"APC:RAM:MD",	CMD_APC_POS_MD },
+		{"APC:RAM:MD?",	CMD_APC_POS_MD_RD },
+		{"APC:PRE",		CMD_APC_PRE },
+		{"APC:PRE?",	CMD_APC_PRE_RD },
+		{"APC:PRE:SPD",	CMD_APC_PRE_SPD },
+		{"APC:PRE:SPD?",CMD_APC_PRE_SPD_RD },
+		{"APC:PRE:UNT",	CMD_APC_PRE_UNT },
+		{"APC:PRE:UNT?",CMD_APC_PRE_UNT_RD },
+		{"APC:POS:STA", CMD_POS_STA_RD },
 		};
 
 //Definition der Einstellungsparameter für die Kommunikation mit ASCII-PROTOKOLL

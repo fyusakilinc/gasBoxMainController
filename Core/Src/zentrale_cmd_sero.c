@@ -15,7 +15,7 @@
 #include "hardware.h"
 #include "gasbox.h"
 #include "ad5592.h"
-
+#include "apc.h"
 
 //--- PRIVATE DEFINES -------------------------------------------------------------------------------------------------------
 #define Z_MAX_HIGHPRIO_NUM			5                     //max.Durchdatz der Befehlsverarbeitung für die Befehlen mit der höchsten Priorität
@@ -24,76 +24,62 @@
 //--- PRIVATE VARIABLES -----------------------------------------------------------------------------------------------------
 
 //--- PRIVATE FUNKTIONSDEKLARATION ----------------------------------------------------------------------------------------
-void z_cmd_sero(stack_item cmd);                   //den einzelnen Befehl zu verarbeiten
+void z_cmd_sero(stack_item cmd);           //den einzelnen Befehl zu verarbeiten
 
 //--- FUNKTIONSDEKLARATIONS -------------------------------------------------------------------------------------------------
 //die Mechanimus zur Verarbeitung der Befehle mit den unterschiedlichen Prioritäten
 //--- FUNKTIONSDEFINITIONS --------------------------------------------------------------------------------------------------
-void z_cmd_scheduler(void)
-{
+void z_cmd_scheduler(void) {
 	uint8_t priolevel0_null_flg = 0;
 	uint8_t priolevel1_null_flg = 0;
 	uint8_t priolevel2_null_flg = 0;
 
-	uint8_t cmdcount = 0;                       //Zähler für die zu verarbeitenden Befehle
-	uint8_t cmd_flg = 0;                       //Falls cmd_flg = 1 ist, d.h. keinen Befehl zu verarbeiten; cmd_flg = 0, d.h. noch Befehl zu verarbeiten
+	uint8_t cmdcount = 0;             //Zähler für die zu verarbeitenden Befehle
+	uint8_t cmd_flg = 0; //Falls cmd_flg = 1 ist, d.h. keinen Befehl zu verarbeiten; cmd_flg = 0, d.h. noch Befehl zu verarbeiten
 	stack_item cmd;
 
 	uint8_t resultflg = get_anzFrei_resultQueue();
 
-	if (resultflg > 1 )            //prüft, ob es noch freien Platz in resultqueue.
-	{
-		do
-		{
-			while ((cmdcount < Z_MAX_HIGHPRIO_NUM) && (priolevel0_null_flg == 0))
+	if (resultflg > 1)          //prüft, ob es noch freien Platz in resultqueue.
 			{
-				if (z_priolevel_header[PRIO_LEVEL0] != NONEXT)
-				{
+		do {
+			while ((cmdcount < Z_MAX_HIGHPRIO_NUM) && (priolevel0_null_flg == 0)) {
+				if (z_priolevel_header[PRIO_LEVEL0] != NONEXT) {
 					zstack_pop(&cmd, PRIO_LEVEL0);
 					z_cmd_sero(cmd);
 					cmdcount++;
 
-				}
-				else
-				{
-					priolevel0_null_flg = 1;      //es gibt keinen Befehl in der Prioritätliste mit Level 0
+				} else {
+					priolevel0_null_flg = 1; //es gibt keinen Befehl in der Prioritätliste mit Level 0
 				};
 			};
 
-			if (z_priolevel_header[PRIO_LEVEL1] != NONEXT)
-			{
-				if (cmdcount < Z_MAXCMD)
-				{
+			if (z_priolevel_header[PRIO_LEVEL1] != NONEXT) {
+				if (cmdcount < Z_MAXCMD) {
 					zstack_pop(&cmd, PRIO_LEVEL1);
 					z_cmd_sero(cmd);
 					cmdcount++;
 
 				};
-			}
-			else
-			{
-				priolevel1_null_flg = 1;   //es gibt keinen Befehl in der Prioritätliste mit Level 1
+			} else {
+				priolevel1_null_flg = 1; //es gibt keinen Befehl in der Prioritätliste mit Level 1
 			};
 
-			if (z_priolevel_header[PRIO_LEVEL2] != NONEXT)
-			{
-				if (cmdcount < Z_MAXCMD)
-				{
+			if (z_priolevel_header[PRIO_LEVEL2] != NONEXT) {
+				if (cmdcount < Z_MAXCMD) {
 					zstack_pop(&cmd, PRIO_LEVEL2);
 					z_cmd_sero(cmd);
 					cmdcount++;
 				};
-			}
-			else
-			{
-				priolevel2_null_flg = 1;   //es gibt keinen Befehl in der Prioritätliste mit Level 2
+			} else {
+				priolevel2_null_flg = 1; //es gibt keinen Befehl in der Prioritätliste mit Level 2
 			};
 
 			//prüft, ob die drei Prioritätslisten alle leer sind.
 			cmd_flg = priolevel0_null_flg & priolevel1_null_flg;
 			cmd_flg &= priolevel2_null_flg;
 
-		}while ( (cmdcount < Z_MAXCMD) && (cmd_flg == 0));
+		} while ((cmdcount < Z_MAXCMD) && (cmd_flg == 0));
 	};
 
 }
@@ -124,7 +110,7 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 
-	// MFC1..MFC4 GET
+		// MFC1..MFC4 GET
 	case CMD_GET_GAS_PDE: {
 		uint16_t v;
 		cmd.cmd_ack = z_mfc_get(0, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
@@ -154,7 +140,7 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 
-	// MFC1..MFC4 CLOSE
+		// MFC1..MFC4 CLOSE
 	case CMD_CLOSE_GAS_PDE: {
 		cmd.cmd_ack = z_mfc_close(0) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
@@ -172,50 +158,70 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 
-	// Valves OPEN-CLOSE-READ
+		// Valves OPEN-CLOSE-READ
 	case CMD_V3_SET: {
 		uint16_t p = cmd.parameter;
 		uint8_t ret;
-		if (p) {ret = z_valve_open(3); } else { ret = z_valve_close(3); }
-	    cmd.cmd_ack = ret ? CMR_SUCCESSFULL : CMR_UNITBUSY;
-	    break;
+		if (p) {
+			ret = z_valve_open(3);
+		} else {
+			ret = z_valve_close(3);
+		}
+		cmd.cmd_ack = ret ? CMR_SUCCESSFULL : CMR_UNITBUSY;
+		break;
 	}
 
 	case CMD_V3_GET: {
-	    uint16_t st;
-	    if (z_valve_get(3, &st)) { cmd.parameter = st; cmd.cmd_ack = CMR_SUCCESSFULL; }
-	    else                    { cmd.cmd_ack = CMR_COMMANDDENIED; }
-	    break;
+		uint16_t st;
+		if (z_valve_get(3, &st)) {
+			cmd.parameter = st;
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
+		break;
 	}
 
 	case CMD_V4_SET: {
 		uint16_t p = cmd.parameter;
 		uint8_t ret;
-		if (p) {ret = z_valve_open(4); } else { ret = z_valve_close(4); }
-	    cmd.cmd_ack = ret ? CMR_SUCCESSFULL : CMR_UNITBUSY;
-	    break;
+		if (p) {
+			ret = z_valve_open(4);
+		} else {
+			ret = z_valve_close(4);
+		}
+		cmd.cmd_ack = ret ? CMR_SUCCESSFULL : CMR_UNITBUSY;
+		break;
 	}
 
 	case CMD_V4_GET: {
-	    uint16_t st;
-	    if (z_valve_get(4, &st)) { cmd.parameter = st; cmd.cmd_ack = CMR_SUCCESSFULL; }
-	    else                    { cmd.cmd_ack = CMR_COMMANDDENIED; }
-	    break;
+		uint16_t st;
+		if (z_valve_get(4, &st)) {
+			cmd.parameter = st;
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
+		break;
 	}
 
 	case CMD_PUMP_SET: {
 		uint16_t p = cmd.parameter;
-	    if (p) { setStartPump(); } else { setStopPump(); }
-	    cmd.cmd_ack = CMR_SUCCESSFULL;
-	    break;
+		if (p) {
+			setStartPump();
+		} else {
+			setStopPump();
+		}
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
 	}
 
 	case CMD_PUMP_GET /*| CMD_PUMP_GET_STA*/: {                 // "PUM?"
-	    // return 0/1 = running
-	    //uint8_t v = pumpRunning();
-	    //cmd_reply_uint(v);              // <-- use your normal “? ” reply routine
-	    //cmd.cmd_ack = CMR_SUCCESSFULL;
-	    break;
+		// return 0/1 = running
+		//uint8_t v = pumpRunning();
+		//cmd_reply_uint(v);              // <-- use your normal “? ” reply routine
+		//cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
 	}
 
 	case CMD_PUMP_GET_WAR: {             // "PUM:WAR?"
@@ -239,8 +245,8 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 
-	case CMD_SET_T: {		// assume temperature values are 10 times the wanted values. so 120 means 12.0 C here to be able to use floats
-		float v = cmd.parameter/10.0f;
+	case CMD_SET_T: {// assume temperature values are 10 times the wanted values. so 120 means 12.0 C here to be able to use floats
+		float v = cmd.parameter / 10.0f;
 		set_TC_STP(v);
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
@@ -248,23 +254,244 @@ void z_cmd_sero(stack_item cmd) {
 
 	case CMD_GET_T: {
 		float v = get_TIST();
-		cmd.parameter = (uint32_t)v*10;
+		cmd.parameter = (uint32_t) v * 10;
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
-	// GET SET ERR GASBOX
-	case CMD_GET_ERR_GB: {
-	    uint16_t e;
-	    cmd.cmd_ack = z_gb_err_get(&e);
-	    if (cmd.cmd_ack == CMR_SUCCESSFULL) cmd.parameter = e;
-	    break;
-	}
-	case CMD_RESET_ERR_GB: {
-	    cmd.cmd_ack = z_gb_err_clr();
-	    break;
+	case CMD_APC_CTL: {
+		if (cmd.parameter > 1) {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+			break;
+		}
+		// 1 -> remote, 0 -> local
+		uint8_t ok = cmd.parameter ? apc_cmd_remote() : apc_cmd_local();
+		cmd.cmd_ack = ok ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
 	}
 
+	case CMD_APC_AMD_RD: {// assume temperature values are 10 times the wanted values. so 120 means 12.0 C here to be able to use floats
+		float v = cmd.parameter / 10.0f;
+		set_TC_STP(v);
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_APC_AMD: {
+		cmd.cmd_ack =
+				apc_set_pp_ctl(cmd.parameter) ?
+						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+	case CMD_APC_CTL_SEL_RD: {
+		uint32_t v;
+		if (apc_ctlr_selector_get(&v)) {
+			cmd.parameter = (int32_t) v;   // safe cast if range fits
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
+		break;
+	}
+
+	case CMD_APC_CTL_SEL: {
+		cmd.cmd_ack =
+				apc_ctlr_selector_set(cmd.parameter) ?
+						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		;
+		break;
+	}
+	case CMD_APC_ERN_RD: {
+		break;
+	}
+
+	case CMD_APC_ERC_RD: {
+		break;
+	}
+	case CMD_APC_VAL: {
+		// 1 -> on, 0 -> off
+		uint8_t ok = cmd.parameter ? apc_cmd_open() : apc_cmd_close();
+		cmd.cmd_ack = ok ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+
+	case CMD_APC_VAL_RD: {
+		break;
+	}
+
+	case CMD_APC_POS: {
+		cmd.cmd_ack =
+				apc_set_pos(cmd.parameter) ?
+						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+
+	case CMD_APC_POS_RD: {
+		uint32_t v;                                      // local storage
+		if (apc_get_pos(&v)) {
+			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
+		break;
+	}
+
+	case CMD_APC_POS_SPD: {
+		cmd.cmd_ack =
+				apc_posspd_set(cmd.parameter) ?
+						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+
+	case CMD_APC_POS_SPD_RD: {
+		uint32_t v;                                      // local storage
+		if (apc_posspd_get(&v)) {
+			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
+		break;
+	}
+
+	case CMD_APC_POS_RAM: { // here we might need to call both ramps
+		cmd.cmd_ack =
+				apc_ram_set_pre(cmd.parameter) ?
+						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+
+	case CMD_APC_POS_RAM_RD: {
+		uint32_t v;                                      // local storage
+		if (apc_ram_get_pre(&v)) {
+			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
+		break;
+	}
+	case CMD_APC_POS_TI: {
+		cmd.cmd_ack =
+				apc_ramti_set_pre(cmd.parameter) ?
+						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+
+	case CMD_APC_POS_TI_RD: {
+		uint32_t v;                                      // local storage
+		if (apc_ramti_get_pre(&v)) {
+			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
+		break;
+	}
+	case CMD_APC_POS_SLP: {
+		cmd.cmd_ack =
+				apc_ramslp_set_pre(cmd.parameter) ?
+						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+
+	case CMD_APC_POS_SLP_RD: {
+		uint32_t v;                                      // local storage
+		if (apc_ramslp_get_pre(&v)) {
+			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
+		break;
+	}
+	case CMD_APC_POS_MD: {
+		cmd.cmd_ack = apc_rammd_set_pre(cmd.parameter) ?
+		CMR_SUCCESSFULL :
+															CMR_COMMANDDENIED;
+		break;
+	}
+
+	case CMD_APC_POS_MD_RD: {
+		uint32_t v;                                      // local storage
+		if (apc_rammd_get_pre(&v)) {
+			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
+		break;
+	}
+
+	case CMD_APC_PRE: {
+		cmd.cmd_ack =
+				apc_set_pres(cmd.parameter) ?
+						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+
+	case CMD_APC_PRE_RD: {
+		uint32_t v;                                      // local storage
+		if (apc_get_pres(&v)) {
+			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
+		break;
+	}
+	case CMD_APC_PRE_SPD: {
+		cmd.cmd_ack =
+				apc_prespd_set(cmd.parameter) ?
+						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+
+	case CMD_APC_PRE_SPD_RD: {
+		uint32_t v;                                      // local storage
+		if (apc_prespd_get(&v)) {
+			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
+		break;
+	}
+	case CMD_APC_PRE_UNT: {
+		cmd.cmd_ack = apc_preunt_set(cmd.parameter) ?
+		CMR_SUCCESSFULL :
+														CMR_COMMANDDENIED;
+		break;
+	}
+
+	case CMD_APC_PRE_UNT_RD: {
+		uint32_t v;                                      // local storage
+		if (apc_preunt_get(&v)) {
+			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
+		break;
+	}
+
+	case CMD_POS_STA_RD: {
+		break;
+	}
+
+		// GET SET ERR GASBOX
+	case CMD_GET_ERR_GB: {
+		uint16_t e;
+		cmd.cmd_ack = z_gb_err_get(&e);
+		if (cmd.cmd_ack == CMR_SUCCESSFULL)
+			cmd.parameter = e;
+		break;
+	}
+	case CMD_RESET_ERR_GB: {
+		cmd.cmd_ack = z_gb_err_clr();
+		break;
+	}
 
 	default:
 		cmd.cmd_ack = CMR_UNKNOWNCOMMAND;

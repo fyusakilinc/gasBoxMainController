@@ -64,7 +64,9 @@ static uint8_t checksum = 0;
 
 // in all commands assumed controller 1 is active
 #define P_ID_CONTROL_MODE        0x0F020000  // Control Mode (2=Pos, 4=Open, 5=Pressure)
-#define P_ID_POS_SPEED           0x11040000  // TODO confirm
+#define P_ID_CTLR_SELECTOR       0x07100000  // Control Mode (2=Pos, 4=Open, 5=Pressure)
+#define P_ID_POS_SPEED           0x11030000  // TODO confirm
+#define P_ID_PRE_SPEED           0x07050000  // TODO confirm
 #define P_ID_PRESS_SPEED         0x07040000  // TODO confirm
 #define P_ID_RAMP_ENABLE_PRE     0x07110301  // TODO confirm (bool)
 #define P_ID_RAMP_TIME_PRE       0x07110302  // TODO confirm (float / seconds)
@@ -72,7 +74,7 @@ static uint8_t checksum = 0;
 #define P_ID_RAMP_MODE_PRE       0x07110304  // TODO confirm (uint_8)
 #define P_ID_RAMP_STA_PRE        0x07110305  // TODO confirm (uint_8) -	start value
 #define P_ID_RAMP_TYPE_PRE       0x07110306  // TODO confirm (uint_8)
-#define P_ID_PRESS_UNIT          0x07010000  // TODO confirm (enum unit)
+#define P_ID_PRESS_UNIT          0x12010301  // TODO confirm (enum unit) for sensor 1
 #define P_ID_RAMP_ENABLE_POS     0x11620100  // TODO confirm (bool)
 #define P_ID_RAMP_TIME_POS       0x11620200  // TODO confirm (float / seconds)
 #define P_ID_RAMP_SLOPE_POS      0x11620300  // TODO confirm (float / mbar per s)
@@ -80,7 +82,6 @@ static uint8_t checksum = 0;
 #define P_ID_RAMP_TYPE_POS       0x11620500  // TODO confirm (uint_8)
 
 // forward
-static void parse_binary_apc(void);
 void apc_on_frame(uint8_t cmd, uint8_t status, uint16_t value);
 // ---- public API ----
 void apc_init(void) {
@@ -95,12 +96,12 @@ void apc_init(void) {
 
 // Pull bytes from UART4 RX ring into msg[] and feed parser
 void apc_sero_get(void) {
-	nzeichen = 0;
+	/*nzeichen = 0;
 	while ((rb_rx_used(&usart1_rb) > 0) && (nzeichen < RMT_MAX_PAKET_LENGTH)) {
 		msg[nzeichen++] = (uint8_t) uartRB_Getc(&usart1_rb);   // legacy getc()
 	}
 	if (nzeichen)
-		parse_binary_apc();
+		parse_binary_apc();*/
 }
 
 #define APC_EOL "\r\n"     // match CPA setting (default CR+LF)
@@ -149,7 +150,7 @@ static void apc_flush_rx(void) {
     while (apc_readline(dump, sizeof dump) >= 0) { /* discard */ }
 }
 
-static uint8_t apc_wait_ack(const char *expect) {
+uint8_t apc_wait_ack(const char *expect) {
     char line[64];
     if (apc_readline(line, sizeof line) < 0) return 0;
     if (line[0] == 'E' && line[1] == ':') return 0;      // error like "E:000080"
@@ -161,7 +162,7 @@ static uint8_t apc_wait_ack(const char *expect) {
 }
 
 // fire-and-forget commands
-static uint8_t apc_get_lorr_mode(uint32_t *out){
+uint8_t apc_get_lorr_mode(uint32_t *out){
     char b[] = "I:" APC_EOL;
     if (!apc_puts(b, sizeof(b)-1)) return 0;
     char line[64];
@@ -174,7 +175,7 @@ static uint8_t apc_get_lorr_mode(uint32_t *out){
 }
 
 // set pressure or position control
-static uint8_t apc_set_pp_ctl(uint32_t v) {
+uint8_t apc_set_pp_ctl(uint32_t v) {
 	char buf[24];
 	int n = snprintf(buf, sizeof(buf), "M:%06lu" APC_EOL, (unsigned long) v); // not true
 	if (n <= 0)
@@ -185,35 +186,35 @@ static uint8_t apc_set_pp_ctl(uint32_t v) {
 
 }
 
-static uint8_t apc_cmd_open(void)  {
+uint8_t apc_cmd_open(void)  {
     char b[] = "O:" APC_EOL;
     apc_flush_rx();
     if (!apc_puts(b, sizeof(b)-1)) return 0;
     return apc_wait_ack("O:");
 }
 
-static uint8_t apc_cmd_close(void) {
+uint8_t apc_cmd_close(void) {
     char b[] = "C:" APC_EOL;
     apc_flush_rx();
     if (!apc_puts(b, sizeof(b)-1)) return 0;
     return apc_wait_ack("C:");
 }
 
-static uint8_t apc_cmd_hold(void)  {
+uint8_t apc_cmd_hold(void)  {
     char b[] = "H:" APC_EOL;
     apc_flush_rx();
     if (!apc_puts(b, sizeof(b)-1)) return 0;
     return apc_wait_ack("H:");
 }
 
-static uint8_t apc_cmd_remote(void){
+uint8_t apc_cmd_remote(void){
     char b[] = "U:02" APC_EOL;
     apc_flush_rx();
     if (!apc_puts(b, sizeof(b)-1)) return 0;
     return apc_wait_ack("U:");
 }
 
-static uint8_t apc_cmd_local(void) {
+uint8_t apc_cmd_local(void) {
     char b[] = "U:01" APC_EOL;
     apc_flush_rx();
     if (!apc_puts(b, sizeof(b)-1)) return 0;
@@ -221,7 +222,7 @@ static uint8_t apc_cmd_local(void) {
 }
 
 // set position / pressure (value already scaled per CPA)
-static uint8_t apc_set_pos(uint32_t v) {
+uint8_t apc_set_pos(uint32_t v) {
 	char buf[24];
 	int n = snprintf(buf, sizeof(buf), "R:%06lu" APC_EOL, (unsigned long) v);
 	if (n <= 0)
@@ -232,7 +233,7 @@ static uint8_t apc_set_pos(uint32_t v) {
 
 }
 
-static uint8_t apc_set_pres(uint32_t v) {
+uint8_t apc_set_pres(uint32_t v) {
 	char buf[24];
 	int n = snprintf(buf, sizeof(buf), "S:%06lu" APC_EOL, (unsigned long) v);
 	if (n <= 0)
@@ -242,32 +243,8 @@ static uint8_t apc_set_pres(uint32_t v) {
 	return apc_wait_ack("S:");
 }
 
-// set position speed
-static uint8_t apc_set_pos_spd(uint32_t v) {
-	char buf[24];
-	int n = snprintf(buf, sizeof(buf), "V:" APC_EOL, (unsigned long) v);
-	if (n <= 0)
-		return 0;
-	if (!apc_puts(buf, (uint8_t) n))
-		return 0;
-	return apc_wait_ack("V:");
-
-}
-
-// set pressure speed
-static uint8_t apc_set_pre_spd(uint32_t v) {
-	char buf[24];
-	int n = snprintf(buf, sizeof(buf), "V:" APC_EOL, (unsigned long) v);
-	if (n <= 0)
-		return 0;
-	if (!apc_puts(buf, (uint8_t) n))
-		return 0;
-	return apc_wait_ack("V:");
-
-}
-
 // queries return 1 on success and write the parsed integer into *out
-static uint8_t apc_get_pres(uint32_t *out){
+uint8_t apc_get_pres(uint32_t *out){
     char b[] = "P:" APC_EOL;
     if (!apc_puts(b, sizeof(b)-1)) return 0;
     char line[64];
@@ -279,7 +256,7 @@ static uint8_t apc_get_pres(uint32_t *out){
     return 1;
 }
 
-static uint8_t apc_get_pos(uint32_t *out){
+uint8_t apc_get_pos(uint32_t *out){
     char b[] = "r:" APC_EOL;  // lowercase per PM
     if (!apc_puts(b, sizeof(b)-1)) return 0;
     char line[64];
@@ -290,7 +267,7 @@ static uint8_t apc_get_pos(uint32_t *out){
     return 1;
 }
 
-static uint8_t apc_info_blk(char *dst, int maxlen){
+uint8_t apc_info_blk(char *dst, int maxlen){
     char b[] = "i:76" APC_EOL;
     if (!apc_puts(b, sizeof(b)-1)) return 0;
     return (apc_readline(dst, maxlen) >= 0);
@@ -303,11 +280,13 @@ static uint8_t apc_p_set_u32(uint32_t param, uint32_t val){
     int n = snprintf(buf,sizeof(buf),"p:01%08lX%02X%lu" APC_EOL,(unsigned long)param,0,(unsigned long)val);
     return (n>0)?apc_puts(buf,(uint8_t)n):0;
 }
+/*
 static uint8_t apc_p_set_f(float val, uint32_t param){
     char buf[64];
     int n = snprintf(buf,sizeof(buf),"p:01%08lX%02X%.6g" APC_EOL,(unsigned long)param,0,val);
     return (n>0)?apc_puts(buf,(uint8_t)n):0;
 }
+*/
 // Read back single value (returns the value string in dst)
 static int apc_p_get(uint32_t param, char *dst, int maxlen, uint32_t to_ms){
     char cmd[32];
@@ -318,15 +297,91 @@ static int apc_p_get(uint32_t param, char *dst, int maxlen, uint32_t to_ms){
 
 // commands
 
-uint8_t apc_ram_set_pre(uint16_t en){ return apc_p_set_u32(P_ID_RAMP_ENABLE_PRE, !!en) ? 1 : 0; }
-uint8_t apc_ram_set_pos(uint16_t en){ return apc_p_set_u32(P_ID_RAMP_ENABLE_POS, !!en) ? 1 : 0; }
+uint8_t apc_ram_set_pre(uint32_t en){ return apc_p_set_u32(P_ID_RAMP_ENABLE_PRE, !!en) ? 1 : 0; }
+uint8_t apc_ram_set_pos(uint32_t en){ return apc_p_set_u32(P_ID_RAMP_ENABLE_POS, !!en) ? 1 : 0; }
 
-uint8_t apc_ram_get_pre(uint16_t *out){
+uint8_t apc_ram_get_pre(uint32_t *out){
     char line[64]; if(!apc_p_get(P_ID_RAMP_ENABLE_PRE,line,sizeof(line),apc_wait_ms)) return 0;
+    *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
+}
+
+uint8_t apc_ram_get_pos(uint32_t *out){
+    char line[64]; if(!apc_p_get(P_ID_RAMP_ENABLE_POS,line,sizeof(line),apc_wait_ms)) return 0;
+    *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
+}
+
+// RAM:TI / RAM:TI?
+uint8_t apc_ramti_set_pre(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_TIME_PRE, v) ? 1 : 0; } // units per CPA
+uint8_t apc_ramti_get_pre(uint32_t *out){
+    char line[64]; if(!apc_p_get(P_ID_RAMP_TIME_PRE,line,sizeof(line),apc_wait_ms)) return 0;
+    *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
+}
+
+uint8_t apc_ramti_set_pos(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_TIME_POS, v) ? 1 : 0; } // units per CPA
+uint8_t apc_ramti_get_pos(uint32_t *out){
+    char line[64]; if(!apc_p_get(P_ID_RAMP_TIME_POS,line,sizeof(line),apc_wait_ms)) return 0;
     *out = (uint16_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
 }
 
-uint8_t apc_ram_get_pos(uint16_t *out){
-    char line[64]; if(!apc_p_get(P_ID_RAMP_ENABLE_POS,line,sizeof(line),apc_wait_ms)) return 0;
-    *out = (uint16_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
+// RAM:SLP / RAM:SLP?
+uint8_t apc_ramslp_set_pre(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_SLOPE_PRE, v) ? 1 : 0; }
+uint8_t apc_ramslp_get_pre(uint32_t *out){
+    char line[64]; if(!apc_p_get(P_ID_RAMP_SLOPE_PRE,line,sizeof(line),apc_wait_ms)) return 0;
+    *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
+}
+
+uint8_t apc_ramslp_set_pos(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_SLOPE_POS, v) ? 1 : 0; }
+uint8_t apc_ramslp(uint32_t *out){
+    char line[64]; if(!apc_p_get(P_ID_RAMP_SLOPE_POS,line,sizeof(line),apc_wait_ms)) return 0;
+    *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
+}
+
+// RAM:MD / RAM:MD?
+uint8_t apc_rammd_set_pre(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_TIME_PRE, v) ? 1 : 0; }
+uint8_t apc_rammd_get_pre(uint32_t *out){
+    char line[64]; if(!apc_p_get(P_ID_RAMP_TIME_PRE,line,sizeof(line),apc_wait_ms)) return 0;
+    *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
+}
+
+uint8_t apc_rammd_set_pos(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_TIME_POS, v) ? 1 : 0; }
+uint8_t apc_rammd_get_pos(uint32_t *out){
+    char line[64]; if(!apc_p_get(P_ID_RAMP_TIME_POS,line,sizeof(line),apc_wait_ms)) return 0;
+    *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
+}
+
+// PRE:UNT / PRE:UNT?
+uint8_t apc_preunt_set(uint32_t unit_enum){ return apc_p_set_u32(P_ID_PRESS_UNIT, unit_enum) ? 1 : 0; }
+uint8_t apc_preunt_get(uint32_t *out){
+    char line[64]; if(!apc_p_get(P_ID_PRESS_UNIT,line,sizeof(line),apc_wait_ms)) return 0;
+    *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
+}
+
+// POS:SPD / POS:SPD?
+uint8_t apc_posspd_set(uint32_t v){    // v scaled per scheme
+    return apc_p_set_u32(P_ID_POS_SPEED, v) ? 1 : 0; // TODO param id
+}
+uint8_t apc_posspd_get(uint32_t *out){
+    char line[64]; if(!apc_p_get(P_ID_POS_SPEED,line,sizeof(line),apc_wait_ms)) return 0;
+    *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10);
+    return 1;
+}
+
+// PRE:SPD / PRE:SPD?
+uint8_t apc_prespd_set(uint32_t v){    // v scaled per scheme
+    return apc_p_set_u32(P_ID_PRE_SPEED, v) ? 1 : 0; // TODO param id
+}
+uint8_t apc_prespd_get(uint32_t *out){
+    char line[64]; if(!apc_p_get(P_ID_PRE_SPEED,line,sizeof(line),apc_wait_ms)) return 0;
+    *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10);
+    return 1;
+}
+
+// APC:CTL:SEL / APC:CTL:SEL?
+uint8_t apc_ctlr_selector_set(uint32_t v){    // v scaled per scheme
+    return apc_p_set_u32(P_ID_CTLR_SELECTOR, v) ? 1 : 0; // TODO param id
+}
+uint8_t apc_ctlr_selector_get(uint32_t *out){
+    char line[64]; if(!apc_p_get(P_ID_CTLR_SELECTOR,line,sizeof(line),apc_wait_ms)) return 0;
+    *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10);
+    return 1;
 }

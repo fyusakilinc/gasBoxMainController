@@ -55,25 +55,17 @@ volatile static uint8_t sloppy = 0;
 // ---- internal parser storage ----
 static volatile uint8_t msg[RMT_MAX_PAKET_LENGTH + 1];
 static volatile uint8_t nzeichen = 0;       // bytes buffered from UART ring
-static uint8_t state = RMT_WAIT_FOR_PAKET_START;
-
-static uint8_t bufferRx[RMT_MAX_PAKET_LENGTH + 1];
-static uint8_t lengthRx = 0;
-static uint8_t dleFlag = 0;
-static uint8_t checksum = 0;
 
 // in all commands assumed controller 1 is active
 #define P_ID_CONTROL_MODE        0x0F020000  // Control Mode (2=Pos, 4=Open, 5=Pressure)
 #define P_ID_CTLR_SELECTOR       0x07100000  // Control Mode (2=Pos, 4=Open, 5=Pressure)
 #define P_ID_POS_SPEED           0x11030000  // TODO confirm
 #define P_ID_PRE_SPEED           0x07050000  // TODO confirm
-#define P_ID_PRESS_SPEED         0x07040000  // TODO confirm
-#define P_ID_RAMP_ENABLE_PRE     0x07110301  // TODO confirm (bool)
-#define P_ID_RAMP_TIME_PRE       0x07110302  // TODO confirm (float / seconds)
-#define P_ID_RAMP_SLOPE_PRE      0x07110303  // TODO confirm (float / mbar per s)
-#define P_ID_RAMP_MODE_PRE       0x07110304  // TODO confirm (uint_8)
-#define P_ID_RAMP_STA_PRE        0x07110305  // TODO confirm (uint_8) -	start value
-#define P_ID_RAMP_TYPE_PRE       0x07110306  // TODO confirm (uint_8)
+#define P_ID_RAMP_ENABLE_PRE(xx)(0x07000000u | ((xx)<<16) | 0x0301u)
+#define P_ID_RAMP_TIME_PRE(xx)  (0x07000000u | ((xx)<<16) | 0x0302u)
+#define P_ID_RAMP_SLOPE_PRE(xx) (0x07000000u | ((xx)<<16) | 0x0303u)
+#define P_ID_RAMP_MODE_PRE(xx)  (0x07000000u | ((xx)<<16) | 0x0304u)
+#define P_ID_RAMP_TYPE_PRE(xx)  (0x07000000u | ((xx)<<16) | 0x0306u)
 #define P_ID_PRESS_UNIT          0x12010301  // TODO confirm (enum unit) for sensor 1
 #define P_ID_RAMP_ENABLE_POS     0x11620100  // TODO confirm (bool)
 #define P_ID_RAMP_TIME_POS       0x11620200  // TODO confirm (float / seconds)
@@ -85,13 +77,6 @@ static uint8_t checksum = 0;
 void apc_on_frame(uint8_t cmd, uint8_t status, uint16_t value);
 // ---- public API ----
 void apc_init(void) {
-	nzeichen = 0;
-	state = RMT_WAIT_FOR_PAKET_START;
-	lengthRx = 0;
-	dleFlag = 0;
-	checksum = 0;
-	memset((void*) msg, 0, sizeof(msg));
-	memset(bufferRx, 0, sizeof(bufferRx));
 }
 
 // Pull bytes from UART4 RX ring into msg[] and feed parser
@@ -102,6 +87,9 @@ void apc_sero_get(void) {
 	}
 	if (nzeichen)
 		parse_binary_apc();*/
+}
+
+void apc_sero_set(void) {
 }
 
 #define APC_EOL "\r\n"     // match CPA setting (default CR+LF)
@@ -162,16 +150,28 @@ uint8_t apc_wait_ack(const char *expect) {
 }
 
 // fire-and-forget commands
-uint8_t apc_get_lorr_mode(uint32_t *out){
-    char b[] = "I:" APC_EOL;
-    if (!apc_puts(b, sizeof(b)-1)) return 0;
-    char line[64];
-    if (apc_readline(line, sizeof(line)) < 0) return 0; // e.g., "P:000423"
-    // parse trailing integer
-    char *p = line;
-    while (*p && (*p < '0' || *p > '9')) ++p;
-    *out = (uint32_t)strtoul(p, NULL, 10);
-    return 1;
+uint8_t apc_get_lorr_mode(uint32_t *out) {
+	char b[] = "I:" APC_EOL;
+	apc_flush_rx();
+	if (!apc_puts(b, sizeof b - 1))
+		return 0;
+	char line[64];
+	if (apc_readline(line, sizeof line) < 0)
+		return 0; // "I: LOCAL"
+	char *p = strchr(line, ':');
+	if (!p)
+		return 0;
+	for (++p; *p == ' ' || *p == '\t'; ++p) {
+	}
+	if (strncasecmp(p, "_LOCAL", 5) == 0)
+		*out = 0;
+	else if (strncasecmp(p, "REMOTE", 6) == 0)
+		*out = 1;
+	else if (strncasecmp(p, "LOCKED", 6) == 0)
+		*out = 2;
+	else
+		return 0;
+	return 1;
 }
 
 // set pressure or position control
@@ -257,7 +257,7 @@ uint8_t apc_get_pres(uint32_t *out){
 }
 
 uint8_t apc_get_pos(uint32_t *out){
-    char b[] = "r:" APC_EOL;  // lowercase per PM
+    char b[] = "A:" APC_EOL;  // lowercase per PM
     if (!apc_puts(b, sizeof(b)-1)) return 0;
     char line[64];
     if (apc_readline(line, sizeof(line)) < 0) return 0;
@@ -297,11 +297,11 @@ static int apc_p_get(uint32_t param, char *dst, int maxlen, uint32_t to_ms){
 
 // commands
 
-uint8_t apc_ram_set_pre(uint32_t en){ return apc_p_set_u32(P_ID_RAMP_ENABLE_PRE, !!en) ? 1 : 0; }
+uint8_t apc_ram_set_pre(uint32_t en){ return apc_p_set_u32(P_ID_RAMP_ENABLE_PRE(11), !!en) ? 1 : 0; }
 uint8_t apc_ram_set_pos(uint32_t en){ return apc_p_set_u32(P_ID_RAMP_ENABLE_POS, !!en) ? 1 : 0; }
 
 uint8_t apc_ram_get_pre(uint32_t *out){
-    char line[64]; if(!apc_p_get(P_ID_RAMP_ENABLE_PRE,line,sizeof(line),apc_wait_ms)) return 0;
+    char line[64]; if(!apc_p_get(P_ID_RAMP_ENABLE_PRE(11),line,sizeof(line),apc_wait_ms)) return 0;
     *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
 }
 
@@ -311,9 +311,9 @@ uint8_t apc_ram_get_pos(uint32_t *out){
 }
 
 // RAM:TI / RAM:TI?
-uint8_t apc_ramti_set_pre(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_TIME_PRE, v) ? 1 : 0; } // units per CPA
+uint8_t apc_ramti_set_pre(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_TIME_PRE(11), v) ? 1 : 0; } // units per CPA
 uint8_t apc_ramti_get_pre(uint32_t *out){
-    char line[64]; if(!apc_p_get(P_ID_RAMP_TIME_PRE,line,sizeof(line),apc_wait_ms)) return 0;
+    char line[64]; if(!apc_p_get(P_ID_RAMP_TIME_PRE(11),line,sizeof(line),apc_wait_ms)) return 0;
     *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
 }
 
@@ -324,9 +324,9 @@ uint8_t apc_ramti_get_pos(uint32_t *out){
 }
 
 // RAM:SLP / RAM:SLP?
-uint8_t apc_ramslp_set_pre(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_SLOPE_PRE, v) ? 1 : 0; }
+uint8_t apc_ramslp_set_pre(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_SLOPE_PRE(11), v) ? 1 : 0; }
 uint8_t apc_ramslp_get_pre(uint32_t *out){
-    char line[64]; if(!apc_p_get(P_ID_RAMP_SLOPE_PRE,line,sizeof(line),apc_wait_ms)) return 0;
+    char line[64]; if(!apc_p_get(P_ID_RAMP_SLOPE_PRE(11),line,sizeof(line),apc_wait_ms)) return 0;
     *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
 }
 
@@ -337,9 +337,9 @@ uint8_t apc_ramslp(uint32_t *out){
 }
 
 // RAM:MD / RAM:MD?
-uint8_t apc_rammd_set_pre(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_TIME_PRE, v) ? 1 : 0; }
+uint8_t apc_rammd_set_pre(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_TIME_PRE(11), v) ? 1 : 0; }
 uint8_t apc_rammd_get_pre(uint32_t *out){
-    char line[64]; if(!apc_p_get(P_ID_RAMP_TIME_PRE,line,sizeof(line),apc_wait_ms)) return 0;
+    char line[64]; if(!apc_p_get(P_ID_RAMP_TIME_PRE(11),line,sizeof(line),apc_wait_ms)) return 0;
     *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
 }
 

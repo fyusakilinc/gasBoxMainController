@@ -2,8 +2,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
+void apc_init(void);
 void apc_sero_get(void);
+void apc_sero_set(void);
 
 #include "SG_global.h"
 

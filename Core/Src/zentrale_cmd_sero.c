@@ -16,6 +16,7 @@
 #include "gasbox.h"
 #include "ad5592.h"
 #include "apc.h"
+#include "iso.h"
 
 //--- PRIVATE DEFINES -------------------------------------------------------------------------------------------------------
 #define Z_MAX_HIGHPRIO_NUM			5                     //max.Durchdatz der Befehlsverarbeitung für die Befehlen mit der höchsten Priorität
@@ -88,6 +89,8 @@ void z_cmd_sero(stack_item cmd) {
 
 	switch (cmd.cmd_index) {
 
+
+	// -----------
 	// MFC1..MFC4 SET
 	case CMD_SET_GAS_PDE: {
 		uint16_t p = clamp16(cmd.parameter);
@@ -205,6 +208,8 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 
+	// -----------
+
 	case CMD_PUMP_SET: {
 		uint16_t p = cmd.parameter;
 		if (p) {
@@ -245,6 +250,8 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 
+	// -----------
+
 	case CMD_SET_T: {// assume temperature values are 10 times the wanted values. so 120 means 12.0 C here to be able to use floats
 		float v = cmd.parameter / 10.0f;
 		set_TC_STP(v);
@@ -259,6 +266,8 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 
+	// -----------
+
 	case CMD_APC_CTL: {
 		if (cmd.parameter > 1) {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -270,10 +279,7 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 
-	case CMD_APC_AMD_RD: {// assume temperature values are 10 times the wanted values. so 120 means 12.0 C here to be able to use floats
-		float v = cmd.parameter / 10.0f;
-		set_TC_STP(v);
-		cmd.cmd_ack = CMR_SUCCESSFULL;
+	case CMD_APC_AMD_RD: {
 		break;
 	}
 
@@ -479,6 +485,94 @@ void z_cmd_sero(stack_item cmd) {
 	case CMD_POS_STA_RD: {
 		break;
 	}
+
+// -----------
+
+	case CMD_ISO_V1: {
+		iso_valve_set(cmd.parameter);
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_ISO_V1_RD: {
+		cmd.parameter = iso_valve_get();
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_REL: {
+		relais_set(cmd.parameter);
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_REL_RD: {
+		cmd.parameter = relais_get();
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_BUZ: {
+		buzzer_set(cmd.parameter);
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_BUZ_RD: {
+		cmd.parameter = buzzer_get();
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_SYS_LED: {
+		ledbereit_set(cmd.parameter);
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_SYS_LED_RD: {
+		cmd.parameter = ledbereit_get();
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_PUM_LED: {
+		ledpumpe_set(cmd.parameter);
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_PUM_LED_RD: {
+		cmd.parameter = ledpumpe_get();
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_ATM_RD: {
+		cmd.parameter = atm_sensor_get();
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_DOOR_SWM_RD: {
+		cmd.parameter = door_switch_get();
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_AIR_RD: {
+		cmd.parameter = air_sensor_get();
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+	case CMD_STP_RD: {
+		cmd.parameter = stop_button_get();
+		cmd.cmd_ack = CMR_SUCCESSFULL;
+		break;
+	}
+
+// -----------
 
 		// GET SET ERR GASBOX
 	case CMD_GET_ERR_GB: {

@@ -99,6 +99,20 @@ static const Cmdline_Item ASCIICmdTable[] = {
 		{"APC:PRE:UNT",	CMD_APC_PRE_UNT },
 		{"APC:PRE:UNT?",CMD_APC_PRE_UNT_RD },
 		{"APC:POS:STA", CMD_POS_STA_RD },
+		{"ISO:V1",		CMD_ISO_V1 },
+		{"ISO:V1?",		CMD_ISO_V1_RD },
+		{"REL",			CMD_REL },
+		{"REL?",		CMD_REL_RD },
+		{"BUZ",			CMD_BUZ },
+		{"BUZ?",		CMD_BUZ_RD },
+		{"SYS:LED",		CMD_SYS_LED },
+		{"SYS:LED?",	CMD_SYS_LED_RD },
+		{"PUM:LED",		CMD_PUM_LED },
+		{"PUM:LED?",	CMD_PUM_LED_RD },
+		{"ATM?",		CMD_ATM_RD },
+		{"DOOR:SWM?",	CMD_DOOR_SWM_RD },
+		{"AIR?",		CMD_AIR_RD },
+		{"FRT:STP?",	CMD_STP_RD },
 		};
 
 //Definition der Einstellungsparameter für die Kommunikation mit ASCII-PROTOKOLL

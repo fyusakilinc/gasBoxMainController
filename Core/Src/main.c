@@ -40,6 +40,7 @@
 #include "zentrale_cmd_sero.h"
 #include "gasbox.h"
 #include "mcp.h"
+#include "apc.h"
 #include "ad5592.h"
 /* USER CODE END Includes */
 
@@ -123,6 +124,8 @@ int main(void)
   zentrale_init();
   mio_init();
   mcp_init();
+  apc_init();
+  iso_init();
 
   delay_ms(500);
   /* USER CODE END 2 */
@@ -140,6 +143,7 @@ int main(void)
 		result_get_sero();
 		mio_sero_get();
 		mcp_sero_get();
+		apc_sero_get();
 
 		zentrale();
 
@@ -147,6 +151,7 @@ int main(void)
 		hw_sero_set();
 		mio_sero_set();
 		mcp_sero_set();
+		apc_sero_set();
   }
   /* USER CODE END 3 */
 }

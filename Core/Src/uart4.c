@@ -70,7 +70,7 @@ void uartRB_OnTxCplt(UartRB *p, UART_HandleTypeDef *huart) {
 		}
 		HAL_UART_Transmit_IT(p->huart, (uint8_t *) &p->tx_hold, x);
 	}
-	//HAL_NVIC_EnableIRQ(p->irqn);
+	HAL_NVIC_EnableIRQ(p->irqn);
 }
 
 //----- FUNKTIONSDEFINITIONEN -------------------------------------------------
@@ -81,7 +81,7 @@ void uart_initAll(void) {
 	uartRB_Init(&uart4_rb, &huart4, UART4_IRQn);
 	uartRB_Init(&uart5_rb, &huart5, UART5_IRQn);
 	uartRB_Init(&usart1_rb, &huart1, USART1_IRQn);
-	uartRB_Init(&usart2_rb, &huart1, USART2_IRQn);
+	uartRB_Init(&usart2_rb, &huart2, USART2_IRQn);
 	uartRB_Init(&usart3_rb, &huart3, USART3_IRQn);
 }
 
@@ -95,7 +95,7 @@ void uartRB_Init(UartRB *p, UART_HandleTypeDef *huart, IRQn_Type irqn) {
 int16_t rb_free_tx(UartRB *p) {
 	int16_t x;
 	HAL_NVIC_DisableIRQ(p->irqn);
-	x = (int16_t) p->tx_in - (int8_t) p->tx_out;
+	x = (int16_t) p->tx_in - (int16_t) p->tx_out;
 	if (x < 0)
 		x += BUFLEN;
 	x = BUFLEN - x;

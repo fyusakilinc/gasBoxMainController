@@ -41,6 +41,7 @@
 #include "gasbox.h"
 #include "mcp.h"
 #include "apc.h"
+#include "rfg.h"
 #include "ad5592.h"
 /* USER CODE END Includes */
 
@@ -126,6 +127,7 @@ int main(void)
   mcp_init();
   apc_init();
   iso_init();
+  rfg_init();
 
   delay_ms(500);
   /* USER CODE END 2 */
@@ -144,6 +146,7 @@ int main(void)
 		mio_sero_get();
 		mcp_sero_get();
 		apc_sero_get();
+		rfg_sero_get();
 
 		zentrale();
 

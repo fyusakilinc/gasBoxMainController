@@ -29,9 +29,12 @@
 #define proc_cmd 4
 
 //die max.Größe der ASCII-Tabelle
-#define ASCII_CMD_MAX			29
+#define ASCII_CMD_MAX			180
 #define BINARY_INDEX_MAX		256
 #define CMD_LENGTH				19
+
+#define CMD_MIN_RFG  89
+#define CMD_MAX_RFG  149
 
 //--- PRIVATE VARIABLES------------------------------------------------------------------------------------------------------
 //Definition der Struktur des Elementes der Ascii-Tabelle
@@ -113,6 +116,58 @@ static const Cmdline_Item ASCIICmdTable[] = {
 		{"DOOR:SWM?",	CMD_DOOR_SWM_RD },
 		{"AIR?",		CMD_AIR_RD },
 		{"FRT:STP?",	CMD_STP_RD },
+		{"RF",			CMD_RF },
+		{"RF?",			CMD_RF_RD },
+		{"SPC:CTL",		CMD_SPC_CTL },
+		{"SPC:CTL?",	CMD_SPC_CTL_RD },
+		{"SPC:T?",		CMD_SPC_T_RD },
+		{"SPC:UDC?",	CMD_SPC_UDC_RD },
+		{"PWR:PF?",		CMD_PWR_PF_RD },
+		{"PWR:PF",		CMD_PWR_PF },
+		{"PWR:PFS?",	CMD_PWR_PFS_RD },
+		{"PWR:PMD",		CMD_PWR_PMD },
+		{"PWR:PMD?",	CMD_PWR_PMD_RD },
+		{"PWR:PMDS?",	CMD_PWR_PMDS_RD },
+		{"PWR:PREA",	CMD_PWR_PREA },
+		{"PWR:PREA?",	CMD_PWR_PREA_RD },
+		{"PWR:PREAS?",	CMD_PWR_PREAS_RD },
+		{"PWR:DCB",		CMD_PWR_DCB },
+		{"PWR:DCB?",	CMD_PWR_DCB_RD },
+		{"PWR:DCBS?",	CMD_PWR_DCBS_RD },
+		{"PLS:P?",		CMD_PLS_P_RD },
+		{"PLS:P",		CMD_PLS_P },
+		{"PLS:LEN?",	CMD_PLS_LEN_RD },
+		{"PLS:LEN",		CMD_PLS_LEN },
+		{"PLS:PER?",	CMD_PLS_PER_RD },
+		{"PLS:PER",		CMD_PLS_PER },
+		{"IGN:CL?",		CMD_IGN_CL_RD },
+		{"IGN:CL",		CMD_IGN_CL },
+		{"IGN:CT?",		CMD_IGN_CT_RD },
+		{"IGN:CT",		CMD_IGN_CT },
+		{"IGN:I?",		CMD_IGN_I_RD },
+		{"IGN:I",		CMD_IGN_I },
+		{"IGN:PFI?",	CMD_IGN_PFI_RD },
+		{"IGN:PFI",		CMD_IGN_PFI },
+		{"IGN:TI?",		CMD_IGN_TI_RD },
+		{"IGN:TI",		CMD_IGN_TI },
+		{"IGN:TS?",		CMD_IGN_TS_RD },
+		{"IGN:TS",		CMD_IGN_TS },
+		{"TI:RST?",		CMD_TI_RST_RD },
+		{"TI:RST",		CMD_TI_RST },
+		{"MAT:MAT:CT?",		CMD_MAT_CT_RD },
+		{"MAT:MAT:CT",		CMD_MAT_CT },
+		{"MAT:MAT:CTS?",	CMD_MAT_CTS_RD },
+		{"MAT:MAT:CL?",		CMD_MAT_CL_RD },
+		{"MAT:MAT:CL",		CMD_MAT_CL },
+		{"MAT:MAT:CLS?",	CMD_MAT_CLS_RD },
+		{"MAT:MAT:MMD?",	CMD_MAT_MMD_RD },
+		{"MAT:MAT:MMD",		CMD_MAT_MMD },
+		{"MAT:SPC:EEP:PROF?",	CMD_EE_PRF_RD },
+		{"MAT:SPC:EEP:LDPROF",	CMD_EE_LDPRF },
+		{"MAT:SPC:EEP:DPROF?",	CMD_EE_DPRF_RD },
+		{"MAT:SPC:EEP:DPROF",	CMD_EE_DPRF },
+		{"MAT:SPC:T?",			CMD_MAT_T_RD },
+		{"MAT:SPC:EEP:STPROF",	CMD_EE_STPRF },
 		};
 
 //Definition der Einstellungsparameter für die Kommunikation mit ASCII-PROTOKOLL
@@ -370,6 +425,27 @@ void parse_ascii(void) {
 				Binary_Search(ASCII_CMD_MAX, cmd, &cmd_index);
 				//uart0_puts(cmd);
 				//uart0_puti(cmd_index);
+
+				// upuntil line 452, we just send the command from PC that corresponds to RFG one directly to the RFG
+				if (cmd_index >= CMD_MIN_RFG && cmd_index <= CMD_MAX_RFG) {
+				    // Forward full command line to UART4 and skip local handling
+				    char out[96];
+				    int32_t nval = negativ_zahl ? -val : val;
+				    int n = (pflag == 1)
+				          ? snprintf(out, sizeof(out), "%s %ld;\r\n", cmd, (long)nval)
+				          : snprintf(out, sizeof(out), "%s;\r\n",       cmd);
+
+				    if (n > 0) {
+				        uartRB_Put(&uart4_rb ,(const uint8_t*)out, (uint16_t)n);
+				        uartRB_KickTx(&uart4_rb);
+				    }
+
+				    // reset parser state & exit this case
+				    strcpy(cmd, "");
+				    val = 0; pflag = 0; eflag = 0; negativ_zahl = 0;
+				    a_state = get_cmd;
+				    break;
+				}
 
 				if (cmd_index != BINARY_INDEX_MAX) {
 					stack_data.cmd_sender = Q_RS232_ASCII;

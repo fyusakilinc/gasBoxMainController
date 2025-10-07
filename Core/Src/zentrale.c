@@ -48,13 +48,6 @@ void zentrale_init(void) {
 // Zentrale denken und entscheiden.
 void zentrale(void) {	// ----- DENKEN -----
 
-	if (readPumpAlarm()) {
-		z_set_error(SG_ERR_PUMP_ALARM);
-	}
-	if (readPumpWarning()) {
-		//z_set_error(SG_ERR_PUMP_WARNING);
-	}
-
 	// Fehlerüberprüfung
 	if (z_error_akt != 0)
 		z_set_status_tend(ZERROR);

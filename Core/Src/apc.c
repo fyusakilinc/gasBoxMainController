@@ -12,49 +12,13 @@
 #include "SG_global.h"
 #include "apc.h"
 
-// ---- framing ----
-#define RMT_MAX_PAKET_LENGTH  14
-#define RMT_DLE               0x3D   // '='
-#define RMT_SOT               0x53   // 'S'
-#define RMT_EOT               0x45   // 'E'
-
-// parser states
-#define RMT_WAIT_FOR_PAKET_START  1
-#define RMT_READ_PAKET            2
-#define RMT_PARSE_PAKET           3
-
 //----- PRIVATE DEFINES -------------------------------------------------------
 // die Zustandsdefinitionen fuer die Zustandsautomaten im ASCII-PROTOKOLL
-#define get_cmd 1
-#define get_sign 2
-#define get_val 3
-#define proc_cmd 4
 
-#define apc_wait_ms 15
-
-//die max.Größe der ASCII-Tabelle
-#define ASCII_CMD_MAX			29
-#define BINARY_INDEX_MAX		256
-#define CMD_LENGTH				19
-
-//--- PRIVATE VARIABLES------------------------------------------------------------------------------------------------------
-//Definition der Struktur des Elementes der Ascii-Tabelle
-typedef struct {
-	char cmdline[CMD_LENGTH];           //für ASCII-Befehl
-	uint16_t cmdindex;					//interne Befehlnummer
-//uint8_t cmdattribut;				//gibt an, dass der Befehl READ/WRITE-Operation ist.
-} Cmdline_Item;
+#define apc_wait_ms 50
 
 
 //Definition der Einstellungsparameter für die Kommunikation mit ASCII-PROTOKOLL
-volatile static uint8_t verbose = 0;
-volatile static uint8_t crlf = 0;
-volatile static uint8_t echo = 0;
-volatile static uint8_t sloppy = 0;
-
-// ---- internal parser storage ----
-static volatile uint8_t msg[RMT_MAX_PAKET_LENGTH + 1];
-static volatile uint8_t nzeichen = 0;       // bytes buffered from UART ring
 
 // in all commands assumed controller 1 is active
 #define P_ID_CONTROL_MODE        0x0F020000  // Control Mode (2=Pos, 4=Open, 5=Pressure)
@@ -73,10 +37,37 @@ static volatile uint8_t nzeichen = 0;       // bytes buffered from UART ring
 #define P_ID_RAMP_MODE_POS       0x11620400  // TODO confirm (uint_8)
 #define P_ID_RAMP_TYPE_POS       0x11620500  // TODO confirm (uint_8)
 
+#define P_ID_OP_MODE			0xA1010000		// for choosing rs232 or rs485, set to 0
+#define P_ID_BAUD				0xA1110100		// for choosing baud, set to 4 for 19200
+#define P_ID_DB_LENGTH			0xA1110200		// for choosing data bit length, set to 1 for 8
+#define P_ID_STOP_BIT			0xA1110300		// for choosing stop bit; 1 or 2
+#define P_ID_PARITY_BIT			0xA1110400		// for choosing parity bit; 0, 1 or 2
+#define P_ID_COMMAND_SET_SLCT	0xA1110500		// for selecting the command set like IC or PM, we use IC so 0
+#define P_ID_COMMAND_TERM		0xA1110B00		// for selecting the command termination, set to 0 for CR + LF
+
+
+static uint8_t apc_p_set_u32(uint32_t param, uint32_t val);
+uint8_t apc_cmd_remote(void);
+
 // forward
 void apc_on_frame(uint8_t cmd, uint8_t status, uint16_t value);
 // ---- public API ----
 void apc_init(void) {
+	apc_p_set_u32(P_ID_OP_MODE, 0);
+	apc_p_set_u32(P_ID_BAUD, 4);
+	apc_p_set_u32(P_ID_DB_LENGTH, 1);
+	apc_p_set_u32(P_ID_STOP_BIT, 0); // stop bit 1
+	apc_p_set_u32(P_ID_PARITY_BIT, 0); // 0 parity
+	apc_p_set_u32(P_ID_COMMAND_SET_SLCT, 0); // ic command set
+	apc_p_set_u32(P_ID_COMMAND_TERM, 0); // CR + LF command termination
+
+	// Ensure controller listens to commands from RS‑232 port
+	apc_cmd_remote();
+
+	// Configure homing behaviour: perform homing automatically at startup
+	apc_p_set_u32(0x10200100, 3); // Start condition: At startup
+	apc_p_set_u32(0x10200300, 5); // End control mode: Pressure control
+
 }
 
 // Pull bytes from UART4 RX ring into msg[] and feed parser
@@ -320,7 +311,7 @@ uint8_t apc_ramti_get_pre(uint32_t *out){
 uint8_t apc_ramti_set_pos(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_TIME_POS, v) ? 1 : 0; } // units per CPA
 uint8_t apc_ramti_get_pos(uint32_t *out){
     char line[64]; if(!apc_p_get(P_ID_RAMP_TIME_POS,line,sizeof(line),apc_wait_ms)) return 0;
-    *out = (uint16_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
+    *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
 }
 
 // RAM:SLP / RAM:SLP?
@@ -337,15 +328,15 @@ uint8_t apc_ramslp(uint32_t *out){
 }
 
 // RAM:MD / RAM:MD?
-uint8_t apc_rammd_set_pre(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_TIME_PRE(11), v) ? 1 : 0; }
+uint8_t apc_rammd_set_pre(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_MODE_PRE(11), v) ? 1 : 0; }
 uint8_t apc_rammd_get_pre(uint32_t *out){
-    char line[64]; if(!apc_p_get(P_ID_RAMP_TIME_PRE(11),line,sizeof(line),apc_wait_ms)) return 0;
+    char line[64]; if(!apc_p_get(P_ID_RAMP_MODE_PRE(11),line,sizeof(line),apc_wait_ms)) return 0;
     *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
 }
 
-uint8_t apc_rammd_set_pos(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_TIME_POS, v) ? 1 : 0; }
+uint8_t apc_rammd_set_pos(uint32_t v){ return apc_p_set_u32(P_ID_RAMP_MODE_POS, v) ? 1 : 0; }
 uint8_t apc_rammd_get_pos(uint32_t *out){
-    char line[64]; if(!apc_p_get(P_ID_RAMP_TIME_POS,line,sizeof(line),apc_wait_ms)) return 0;
+    char line[64]; if(!apc_p_get(P_ID_RAMP_MODE_POS,line,sizeof(line),apc_wait_ms)) return 0;
     *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
 }
 

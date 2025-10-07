@@ -22,8 +22,6 @@
 #define SG_ERR_U5V		2
 #define SG_ERR_U12V		3
 
-#define SG_ERR_PUMP_ALARM	4
-#define SG_ERR_PUMP_WARNING	5
 #define SG_ERRDTC	6
 #define SG_ERRPLS   7
 

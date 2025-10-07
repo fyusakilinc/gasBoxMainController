@@ -21,21 +21,8 @@
 //Definition der Einstellungsparameter für die Kommunikation mit ASCII-PROTOKOLL
 
 // in all commands assumed controller 1 is active
-#define P_ID_CONTROL_MODE        0x0F020000  // Control Mode (2=Pos, 4=Open, 5=Pressure)
-#define P_ID_CTLR_SELECTOR       0x07100000  // Control Mode (2=Pos, 4=Open, 5=Pressure)
-#define P_ID_POS_SPEED           0x11030000  // TODO confirm
-#define P_ID_PRE_SPEED           0x07050000  // TODO confirm
-#define P_ID_RAMP_ENABLE_PRE(xx)(0x07000000u | ((xx)<<16) | 0x0301u)
-#define P_ID_RAMP_TIME_PRE(xx)  (0x07000000u | ((xx)<<16) | 0x0302u)
-#define P_ID_RAMP_SLOPE_PRE(xx) (0x07000000u | ((xx)<<16) | 0x0303u)
-#define P_ID_RAMP_MODE_PRE(xx)  (0x07000000u | ((xx)<<16) | 0x0304u)
-#define P_ID_RAMP_TYPE_PRE(xx)  (0x07000000u | ((xx)<<16) | 0x0306u)
-#define P_ID_PRESS_UNIT          0x12010301  // TODO confirm (enum unit) for sensor 1
-#define P_ID_RAMP_ENABLE_POS     0x11620100  // TODO confirm (bool)
-#define P_ID_RAMP_TIME_POS       0x11620200  // TODO confirm (float / seconds)
-#define P_ID_RAMP_SLOPE_POS      0x11620300  // TODO confirm (float / mbar per s)
-#define P_ID_RAMP_MODE_POS       0x11620400  // TODO confirm (uint_8)
-#define P_ID_RAMP_TYPE_POS       0x11620500  // TODO confirm (uint_8)
+
+// interface rs232
 
 #define P_ID_OP_MODE			0xA1010000		// for choosing rs232 or rs485, set to 0
 #define P_ID_BAUD				0xA1110100		// for choosing baud, set to 4 for 19200
@@ -44,6 +31,51 @@
 #define P_ID_PARITY_BIT			0xA1110400		// for choosing parity bit; 0, 1 or 2
 #define P_ID_COMMAND_SET_SLCT	0xA1110500		// for selecting the command set like IC or PM, we use IC so 0
 #define P_ID_COMMAND_TERM		0xA1110B00		// for selecting the command termination, set to 0 for CR + LF
+#define P_ID_POS_UNIT			0xA1120101 		// set 0 to 7
+#define P_ID_PRESS_UNIT			0xA1120201		// set 0 to 7
+
+// system
+#define P_ID_ACC_MODE			0x0F0B0000		// for choosing local or remote, 0 local, 1 remote, 2 remote locked
+#define P_ID_CONTROL_MODE		0x0F020000  	// Control Mode (2=Pos, 4=Open, 5=Pressure)
+#define P_ID_ERR_RECOVER		0x0F506600 		// bool, attempts to fix the error without restart
+#define P_ID_RES_CTLR			0x0F500100		// bool, Emulates a power cycle
+
+// valve
+#define P_ID_VALVE_POS			0x10010000 		// float, read the valve actual position
+#define P_ID_VALVE_POS_STATE	0x10100000		// 0 int, 1 closed, 2 open
+#define P_ID_HOMING_START_COND	0x10200100 		// 3 for at startup
+#define P_ID_HOMING_END_MOD		0x10200300 		// 5 for setting mode pressure after homing
+#define P_ID_HOMING_STATUS		0x10201100		// 0 not started, 1 in prog, 2 ok, 3 error
+
+// pos control
+#define P_ID_ACT_POS			0x11010000 		// float, read the act pos
+#define P_ID_TARGET_POS			0x11020000 		// float, set the target pos
+#define P_ID_POS_SPEED			0x11030000
+#define P_ID_RAMP_ENABLE_POS	0x11620100 		// (bool)
+#define P_ID_RAMP_TIME_POS		0x11620200  	// (float / seconds)
+#define P_ID_RAMP_SLOPE_POS		0x11620300  	//(float / mbar per s)
+#define P_ID_RAMP_MODE_POS		0x11620400  	// (uint_8)
+#define P_ID_RAMP_TYPE_POS		0x11620500  	// (uint_8)
+
+// pres control
+#define P_ID_TARGET_P_USED			0x07030000 		//  This value is set as p ctlr input. It differs to the Target Pressure if a pressure ramp is used.
+#define P_ID_PRE_SPEED				0x07050000
+#define P_ID_CTLR_SELECTOR 			0x07100000 		// active controller in control mode = pressure
+#define P_ID_RAMP_ENABLE_PRE(xx)	(0x07000000u | ((xx)<<16) | 0x0301u)
+#define P_ID_RAMP_TIME_PRE(xx)  	(0x07000000u | ((xx)<<16) | 0x0302u)
+#define P_ID_RAMP_SLOPE_PRE(xx) 	(0x07000000u | ((xx)<<16) | 0x0303u)
+#define P_ID_RAMP_MODE_PRE(xx)  	(0x07000000u | ((xx)<<16) | 0x0304u)
+#define P_ID_RAMP_TYPE_PRE(xx)  	(0x07000000u | ((xx)<<16) | 0x0306u)
+
+// pres sensor
+#define P_ID_ACT_PRE			0x12100000
+#define P_ID_SENS_SLCT			0x12040100		// 0 to 3
+#define P_ID_TARGET_PRE			0x12040300
+#define P_ID_EXEC				0x12040400		// 1 exec zero adjust, 2 clear ofs value
+
+
+
+
 
 
 static uint8_t apc_p_set_u32(uint32_t param, uint32_t val);
@@ -65,8 +97,8 @@ void apc_init(void) {
 	apc_cmd_remote();
 
 	// Configure homing behaviour: perform homing automatically at startup
-	apc_p_set_u32(0x10200100, 3); // Start condition: At startup
-	apc_p_set_u32(0x10200300, 5); // End control mode: Pressure control
+	apc_p_set_u32(P_ID_HOMING_START_COND, 3); // Start condition: At startup
+	apc_p_set_u32(P_ID_HOMING_END_MOD, 5); // End control mode: Pressure control
 
 }
 
@@ -211,7 +243,7 @@ uint8_t apc_cmd_local(void) {
     if (!apc_puts(b, sizeof(b)-1)) return 0;
     return apc_wait_ack("U:");
 }
-
+/*
 // set position / pressure (value already scaled per CPA)
 uint8_t apc_set_pos(uint32_t v) {
 	char buf[24];
@@ -223,7 +255,7 @@ uint8_t apc_set_pos(uint32_t v) {
 	return apc_wait_ack("R:");
 
 }
-
+*/
 uint8_t apc_set_pres(uint32_t v) {
 	char buf[24];
 	int n = snprintf(buf, sizeof(buf), "S:%06lu" APC_EOL, (unsigned long) v);
@@ -246,7 +278,7 @@ uint8_t apc_get_pres(uint32_t *out){
     *out = (uint32_t)strtoul(p, NULL, 10);
     return 1;
 }
-
+/*
 uint8_t apc_get_pos(uint32_t *out){
     char b[] = "A:" APC_EOL;  // lowercase per PM
     if (!apc_puts(b, sizeof(b)-1)) return 0;
@@ -257,7 +289,7 @@ uint8_t apc_get_pos(uint32_t *out){
     *out = (uint32_t)strtoul(p, NULL, 10);
     return 1;
 }
-
+*/
 uint8_t apc_info_blk(char *dst, int maxlen){
     char b[] = "i:76" APC_EOL;
     if (!apc_puts(b, sizeof(b)-1)) return 0;
@@ -287,6 +319,18 @@ static int apc_p_get(uint32_t param, char *dst, int maxlen, uint32_t to_ms){
 }
 
 // commands
+
+uint8_t apc_set_pre(uint32_t v){ return apc_p_set_u32(P_ID_TARGET_PRE, v) ? 1 : 0; }
+int8_t 	apc_get_pre(uint32_t *out){
+    char line[64]; if(!apc_p_get(P_ID_ACT_PRE,line,sizeof(line),apc_wait_ms)) return 0;
+    *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
+}
+
+uint8_t apc_set_pos(uint32_t v){ return apc_p_set_u32(P_ID_TARGET_POS, v) ? 1 : 0; }
+uint8_t apc_get_pos(uint32_t *out){
+    char line[64]; if(!apc_p_get(P_ID_ACT_POS,line,sizeof(line),apc_wait_ms)) return 0;
+    *out = (uint32_t)strtoul(strrchr(line,' ')+1,NULL,10); return 1;
+}
 
 uint8_t apc_ram_set_pre(uint32_t en){ return apc_p_set_u32(P_ID_RAMP_ENABLE_PRE(11), !!en) ? 1 : 0; }
 uint8_t apc_ram_set_pos(uint32_t en){ return apc_p_set_u32(P_ID_RAMP_ENABLE_POS, !!en) ? 1 : 0; }

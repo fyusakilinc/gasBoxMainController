@@ -97,22 +97,22 @@ void z_cmd_sero(stack_item cmd) {
 	// -----------
 	// MFC1..MFC4 SET
 	case CMD_SET_GAS_PDE: {
-		uint16_t p = clamp16(cmd.par0);
+		uint16_t p = clamp16((uint16_t) cmd.par0);
 		cmd.cmd_ack = z_mfc_set(0, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 	case CMD_SET_GAS_AIR: {
-		uint16_t p = clamp16(cmd.par0);
+		uint16_t p = clamp16((uint16_t) cmd.par0);
 		cmd.cmd_ack = z_mfc_set(1, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 	case CMD_SET_GAS_O2: {
-		uint16_t p = clamp16(cmd.par0);
+		uint16_t p = clamp16((uint16_t) cmd.par0);
 		cmd.cmd_ack = z_mfc_set(2, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 	case CMD_SET_GAS_4: {
-		uint16_t p = clamp16(cmd.par0);
+		uint16_t p = clamp16((uint16_t) cmd.par0);
 		cmd.cmd_ack = z_mfc_set(3, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
@@ -122,28 +122,28 @@ void z_cmd_sero(stack_item cmd) {
 		uint16_t v;
 		cmd.cmd_ack = z_mfc_get(0, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		if (cmd.cmd_ack == CMR_SUCCESSFULL)
-			cmd.par0 = v;
+			cmd.par0 = (double) v;
 		break;
 	}
 	case CMD_GET_GAS_AIR: {
 		uint16_t v;
 		cmd.cmd_ack = z_mfc_get(1, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		if (cmd.cmd_ack == CMR_SUCCESSFULL)
-			cmd.par0 = v;
+			cmd.par0 = (double) v;
 		break;
 	}
 	case CMD_GET_GAS_O2: {
 		uint16_t v;
 		cmd.cmd_ack = z_mfc_get(2, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		if (cmd.cmd_ack == CMR_SUCCESSFULL)
-			cmd.par0 = v;
+			cmd.par0 = (double) v;
 		break;
 	}
 	case CMD_GET_GAS_4: {
 		uint16_t v;
 		cmd.cmd_ack = z_mfc_get(3, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		if (cmd.cmd_ack == CMR_SUCCESSFULL)
-			cmd.par0 = v;
+			cmd.par0 = (double) v;
 		break;
 	}
 
@@ -167,7 +167,7 @@ void z_cmd_sero(stack_item cmd) {
 
 		// Valves OPEN-CLOSE-READ
 	case CMD_V3_SET: {
-		uint16_t p = cmd.par0;
+		uint16_t p = (uint16_t) cmd.par0;
 		uint8_t ret;
 		if (p) {
 			ret = z_valve_open(3);
@@ -181,7 +181,7 @@ void z_cmd_sero(stack_item cmd) {
 	case CMD_V3_GET: {
 		uint16_t st;
 		if (z_valve_get(3, &st)) {
-			cmd.par0 = st;
+			cmd.par0 = (double) st;
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -190,7 +190,7 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_V4_SET: {
-		uint16_t p = cmd.par0;
+		uint16_t p = (uint16_t) cmd.par0;
 		uint8_t ret;
 		if (p) {
 			ret = z_valve_open(4);
@@ -204,7 +204,7 @@ void z_cmd_sero(stack_item cmd) {
 	case CMD_V4_GET: {
 		uint16_t st;
 		if (z_valve_get(4, &st)) {
-			cmd.par0 = st;
+			cmd.par0 = (double) st;
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -235,21 +235,21 @@ void z_cmd_sero(stack_item cmd) {
 
 	case CMD_PUMP_GET_WAR: {             // "PUM:WAR?"
 		uint8_t v = readPumpWarning();         // collective warning bit
-		cmd.par0 = v;
+		cmd.par0 = (double) v;
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_PUMP_GET_ALA: {
 		uint8_t v = readPumpAlarm();
-		cmd.par0 = v;
+		cmd.par0 = (double) v;
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_PUMP_GET_RMT: {
 		uint8_t v = readPumpRemote();
-		cmd.par0 = v;
+		cmd.par0 = (double) v;
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
@@ -480,85 +480,85 @@ void z_cmd_sero(stack_item cmd) {
 // -----------
 
 	case CMD_ISO_V1: {
-		iso_valve_set(cmd.par0);
+		iso_valve_set((uint8_t) cmd.par0);
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_ISO_V1_RD: {
-		cmd.par0 = iso_valve_get();
+		cmd.par0 = (float) iso_valve_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_REL: {
-		relais_set(cmd.par0);
+		relais_set((uint8_t) cmd.par0);
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_REL_RD: {
-		cmd.par0 = relais_get();
+		cmd.par0 = (float) relais_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_BUZ: {
-		buzzer_set(cmd.par0);
+		buzzer_set((uint8_t) cmd.par0);
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_BUZ_RD: {
-		cmd.par0 = buzzer_get();
+		cmd.par0 = (float) buzzer_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_SYS_LED: {
-		ledbereit_set(cmd.par0);
+		ledbereit_set((uint8_t) cmd.par0);
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_SYS_LED_RD: {
-		cmd.par0 = ledbereit_get();
+		cmd.par0 = (float) ledbereit_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_PUM_LED: {
-		ledpumpe_set(cmd.par0);
+		ledpumpe_set((uint8_t) cmd.par0);
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_PUM_LED_RD: {
-		cmd.par0 = ledpumpe_get();
+		cmd.par0 = (float) ledpumpe_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_ATM_RD: {
-		cmd.par0 = atm_sensor_get();
+		cmd.par0 = (float) atm_sensor_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_DOOR_SWM_RD: {
-		cmd.par0 = door_switch_get();
+		cmd.par0 = (float) door_switch_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_AIR_RD: {
-		cmd.par0 = air_sensor_get();
+		cmd.par0 = (float) air_sensor_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_STP_RD: {
-		cmd.par0 = stop_button_get();
+		cmd.par0 = (float) stop_button_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}

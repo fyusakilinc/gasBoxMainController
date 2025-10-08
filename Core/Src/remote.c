@@ -12,12 +12,7 @@
 #include "SG_global.h"
 
 // ---- framing ----
-#define RMT_MAX_PAKET_LENGTH  14
 #define TOKEN_LENGTH_MAX  32
-#define RMT_DLE               0x3D   // '='
-#define RMT_SOT               0x53   // 'S'
-#define RMT_EOT               0x45   // 'E'
-
 
 typedef enum {
     S_WAIT_CMD = 0,
@@ -29,15 +24,8 @@ typedef enum {
 
 //----- PRIVATE DEFINES -------------------------------------------------------
 // die Zustandsdefinitionen fuer die Zustandsautomaten im ASCII-PROTOKOLL
-#define get_cmd 1
-#define get_sign 2
-#define get_val 3
-#define proc_cmd 4
 
 //die max.Größe der ASCII-Tabelle
-#define ASCII_CMD_MAX			180
-#define BINARY_INDEX_MAX		256
-#define CMD_LENGTH_MAX			32
 
 #define CMD_MIN_RFG  89
 #define CMD_MAX_RFG  149
@@ -50,16 +38,8 @@ static volatile uint8_t msg[CMD_LENGTH_MAX  + 1];
 static volatile uint8_t nzeichen = 0;       // bytes buffered from UART ring
 static uint8_t state = S_WAIT_CMD;
 
-static uint8_t bufferRx[RMT_MAX_PAKET_LENGTH + 1];
-static uint8_t lengthRx = 0;
-static uint8_t dleFlag = 0;
-static uint8_t checksum = 0;
-
 // forward
 void parse_ascii(void);
-void output_ascii(int32_t);
-void Binary_Search(uint8_t ncmd, char *key, uint8_t *cmdindex);
-void output_ascii_cmdack(uint8_t cmd_ack);
 
 // passthrough to RFG
 //#define RFG_PASSTHRU
@@ -87,11 +67,7 @@ static inline void ap_reset_state(char *cmd, uint8_t *cmd_len,
 void remote_init(void) {
 	nzeichen = 0;
 	state = S_WAIT_CMD;
-	lengthRx = 0;
-	dleFlag = 0;
-	checksum = 0;
 	memset((void*) msg, 0, sizeof(msg));
-	memset(bufferRx, 0, sizeof(bufferRx));
 
 }
 
@@ -126,7 +102,7 @@ void parse_ascii(void) {
 
 	do {
 		// wenn es ein Zeichen in UART1 Buffer gibt und die Automate nicht im Bearbeitungszustand ist
-		if ((nzeichen > 0) && (a_state != proc_cmd)) {
+		if ((nzeichen > 0) && (a_state != S_PROC_CMD)) {
 			nc = msg[ptr++];				// hole ein Zeichen aus msg-buffer
 		} else
 			nc = 0;
@@ -219,7 +195,7 @@ void parse_ascii(void) {
 
 		case S_PROC_CMD: {
 			// 1) resolve command
-			uint8_t cmd_id = ASCII_CMD_MAX;
+			uint16_t cmd_id = ASCII_CMD_MAX;
 			Binary_Search(ASCII_CMD_MAX, cmd, &cmd_id);
 
 			// 2) build stack item (READ if no value, WRITE if value present & valid)
@@ -268,126 +244,6 @@ void parse_ascii(void) {
 		//	versandstart1();
 
 	} while (ptr < nzeichen);
-}
-
-void serialSendAnswer(uint8_t *message) {
-	uint8_t i;
-	uint8_t n = 0;
-	uint8_t checksum = 0;
-	char buffer[RMT_MAX_PAKET_LENGTH + 1];
-
-	if ((message[2] == 0x00) || (message[2] == 0x02) || (message[2] == 0x03)
-			|| (message[2] == 0x0A)) //für die Kompabilität vom altem MatchingCube-Programm. später zu löschen
-			{
-		message[2] |= 0x80;
-	}
-
-	buffer[n++] = RMT_DLE;
-	buffer[n++] = RMT_SOT;
-	for (i = 0; i < (CMR_DATAPAKET_LENGTH - 1); i++) {
-		buffer[n++] = message[i];
-		if (message[i] == RMT_DLE) {
-			buffer[n++] = message[i];
-			// Die Prüfsumme erstreckt sich nur noch über die NETTO-Payload!
-			//checksum += message[i];
-		}
-		checksum += message[i];
-	}
-	buffer[n++] = checksum;
-	if (checksum == RMT_DLE) {
-		buffer[n++] = checksum;
-	}
-	buffer[n++] = RMT_DLE;
-	buffer[n++] = RMT_EOT;
-
-	uartRB_Put(&usart2_rb, buffer, n);
-	uartRB_KickTx(&usart2_rb);
-}
-
-void output_ascii_cmdack(uint8_t cmd_ack) {
-	char tmp[35];
-	char tmp2[40];
-	tmp2[0] = '\0';   // init before strcat
-
-	switch(cmd_ack & 0xFF)  //(cmd_ack & 0x7F)
-	{
-		case CMR_COMMANDONDEMAND:
-			strcpy(tmp, "No Answer!");
-			break;
-
-		case CMR_PARAMETERINVALID:
-			strcpy(tmp, "Parameter Invalid!");
-			break;
-
-		case CMR_PARAMETERCLIPEDMIN:
-			strcpy(tmp, "Parameter Clipped to Minimum!");
-			break;
-
-		case CMR_PARAMETERCLIPEDMAX:
-			strcpy(tmp, "Parameter Clipped to Maximum!");
-			break;
-
-		case CMR_PARAMETERADJUSTED:
-			strcpy(tmp, "Parameter Adjusted!");
-			break;
-
-		case CMR_WRONGPARAMETERFORMAT:
-			strcpy(tmp, "Wrong Parameter Format!");
-			break;
-
-		case CMR_UNKNOWNCOMMAND:
-			strcpy(tmp, "Unknown Command!");
-			break;
-
-		case CMR_COMMANDDENIED:
-			strcpy(tmp, "Command Denied!");
-			break;
-
-		case CMR_COMMANDNOTSUPPORTED:
-			strcpy(tmp, "Command Not Supported!");
-			break;
-
-		case CMR_EEPROMERROR:
-			strcpy(tmp, "EEPROM Error!");
-			break;
-
-		case CMR_EEPWRLOCKED:
-			strcpy(tmp, "EEPROM Write Lock!");
-			break;
-
-		case CMR_WRONGOPMODE:
-			strcpy(tmp, "Wrong Operation Mode!");
-			break;
-
-		case CMR_UNITBUSY:
-			strcpy(tmp, "Unit Busy!");
-			break;
-
-		case CMR_MISSINGPARAMETER:
-			strcpy(tmp, "Missing Parameter!");
-			break;
-
-		case CMR_OPTIONNOTINSTALLED:
-			strcpy(tmp, "Required Option Not Installed!");
-			break;
-
-		case CMR_MALFORMATTEDCOMMAND:
-			strcpy(tmp, "Malformatted Command!");
-			break;
-
-		case STACK_CMDINSTACK:
-			strcpy(tmp, "Ins Stack!");
-			break;
-
-		default:
-			sprintf(tmp,"%3.3u",(cmd_ack & 0x7F));
-			break;
-	}
-
-	strcat(tmp2,tmp);
-	strcat(tmp2,";");
-	uartRB_Put(&usart2_rb,tmp2, strlen(tmp2));
-	uartRB_KickTx(&usart2_rb);       // ensure TX starts
 }
 
 void output_ascii_ui(uint32_t val) {

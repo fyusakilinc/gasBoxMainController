@@ -9,7 +9,7 @@
 //--- PRIVATE VARIABLES------------------------------------------------------------------------------------------------------
 //Definition der Struktur des Elementes der Ascii-Tabelle
 typedef struct {
-	char cmdline[CMD_LENGTH];           //für ASCII-Befehl
+	char cmdline[CMD_LENGTH_MAX];           //für ASCII-Befehl
 	uint16_t cmdindex;					//interne Befehlnummer
 	uint8_t rw;					//gibt an, dass der Befehl READ/WRITE-Operation ist.
 } Cmdline_Item;
@@ -249,107 +249,6 @@ uint8_t isHex(const char *str, int32_t *val) {
 	return ret;
 }
 
-//ermittle die Channelnummer aus dem Befehl. Die Channelnummer ist mit Punkt getrennt.
-//Der Befehl wird ohne Channelnummer zurückgeliefert. len = die Laenge des Befehles
-uint8_t getChannel(char *str, uint8_t len, int8_t *chanr){
-
-	int8_t pos = -1;
-	uint8_t i = 0;
-
-
-	if (!*str) {
-		*chanr = NOCHANZONE;                   //NOCHANNEL;
-		return 0;    //Befehlformatfehler
-	}
-
-	if ((str[0] >= '0') && (str[0] <= '9')) {
-		*chanr = NOCHANZONE;                       //NOCHANNEL;
-		return 0; //Kein Befehl mit einer Zahl am Anfang.
-	}
-
-	*chanr = 0 ;
-	for (i=0; i < len ; i++) {
-		if (str[i] == 46){
-			if (i == 0) {  //.1 ist nicht erlaubt
-				*chanr = NOCHANZONE;                   //NOCHANNEL;
-				return 0;
-			}
-			else if (pos == -1){   //die Position des ersten Punktes
-				pos = i;
-			}
-			else {                    //mehrere Punkte sind nicht erlaubt, wie z.B. Dc.1.2
-				*chanr = NOCHANZONE;        //NOCHANNEL;
-				return 0;
-			}
-		}
-	}
-
-	if (pos > 0 ) {
-		for (i=pos+1; i < len; i++){
-			if ((str[i] >= '0') && (str[i] <= '9')) {
-				*chanr =*chanr*10+ (str[i]-48);
-			}
-			else {                            //DC.13abc ist nicht erlaubt
-				*chanr = NOCHANZONE;              //NOCHANNEL;
-				return 0;
-			}
-		}
-		str[pos] ='\0';
-	}
-	else *chanr = NOCHANZONE;                          //NOCHANNEL;
-
-	return 1;
-}
-
-//ermittle die Zonenummer aus dem Befehl.Die Zonenummer ist direkt
-//Der Befehl wird ohne Zonenummer zurückgeliefert. len = die Laenge des Befehles
-uint8_t getZone(char *str, uint8_t len, int8_t *zonenr) {
-
-	int8_t pos = -1;
-	uint8_t i = 0;
-
-	if (!*str) {
-		*zonenr = NOCHANZONE;                //NOZONE;
-		return 0;    //Befehlformatfehler
-	}
-
-	if ((str[0] >= '0') && (str[0] <= '9')) {
-		*zonenr = NOCHANZONE;                         //NOZONE;
-		return 0; //Kein Befehl mit einer Zahl am Anfang.
-	}
-
-	if (str[0] != ':') {
-		*zonenr = NOCHANZONE;                           //NOZONE;
-		return 0;    //Kein Konfigurationsbefehl
-	}
-
-	for (i = len - 1; i > 0; i--) {
-		if ((str[i] >= '0') && (str[i] <= '9')) {
-			if (i == len - 1) {
-				pos = i;
-				*zonenr = str[i] - 48;
-			} else {
-				if (pos > i) {
-					pos = i;
-					*zonenr = (str[i] - 48) * 10 + *zonenr;
-				}
-			}
-		} else
-			break;
-	}
-
-	if (pos > 1) {
-		str[pos] = '\0';
-	}
-	//else if (pos == 1){   //:123 oder :DDSmax3. => nicht erlaubt
-	else {
-		*zonenr = NOCHANZONE;               //NOZONE;
-		return 0;
-	}
-
-	return 1;
-
-}
 
 float str2float(const char *str) {
 	char c;

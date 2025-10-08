@@ -11,6 +11,9 @@
 #include "cmdlist.h"
 #include "SG_global.h"
 #include "apc.h"
+#include <math.h>
+#include "float.h"
+#include <errno.h>
 
 //----- PRIVATE DEFINES -------------------------------------------------------
 
@@ -68,7 +71,7 @@
 
 
 static uint8_t apc_p_set_u32(uint32_t param, uint32_t val);
-uint8_t apc_set_acc_mode(uint32_t v);
+uint8_t apc_set_acc_mode(double v);
 
 // forward
 void apc_on_frame(uint8_t cmd, uint8_t status, uint16_t value);
@@ -153,6 +156,24 @@ static uint8_t apc_p_set_u32(uint32_t param, uint32_t val){
     return (n>0)?apc_puts(buf,(uint8_t)n):0;
 }
 
+static uint8_t apc_p_set_f(uint32_t param, double val){
+    char buf[64];
+    /* Use %.6g unless your device requires fixed decimals like %.3f */
+    int n = snprintf(buf, sizeof(buf),
+                     "p:01%08lX%02X%.6g" APC_EOL,
+                     (unsigned long)param, 0, val);
+    return (n > 0) ? apc_puts(buf, (uint8_t)n) : 0;
+}
+
+static int apc_p_set_u32_from_double(uint32_t param, double dv){
+    if (!isfinite(dv)) return 0;
+    double r = nearbyint(dv);
+    /* Tolerance so 1.0000001 doesn’t fail due to FP noise */
+    if (fabs(dv - r) > 1e-6) return 0;
+    if (r < 0.0 || r > (double)UINT32_MAX) return 0;
+    return apc_p_set_u32(param, (uint32_t)r);
+}
+
 // Read back single value (returns the value string in dst)
 static int apc_p_get(uint32_t param, char *dst, int maxlen){
     char cmd[32];
@@ -181,7 +202,10 @@ static int apc_parse_p_value_double(const char *line,
     const char *vstr = NULL;
 
     if (!apc_parse_p_header(line, &err, &func, &pid, &idx, &vstr)) return 0;
-    if (err != 0) return 0;                 // device reported an error
+	if (err != 0) {
+		z_set_error(err); // TODO: implement get error structure here. error code and error number
+		return 0;
+	}  // device reported an error
     if (func != 0x0B) return 0;             // expect GET echo
     if (pid  != expect_param) return 0;     // sanity check: same param
     if (idx  != 0x00) return 0;             // if you only use index 0
@@ -194,19 +218,19 @@ static int apc_parse_p_value_double(const char *line,
 
     *out = val;
     return 1;
-}
+} // we are getting all the params in double because cmd.param is double
 
 
 //  ----- commands -----
 
 //  ----- SYSTEM -----
 
-uint8_t apc_set_acc_mode(uint32_t v) {
-	return apc_p_set_u32(P_ID_ACC_MODE, v) ? 1 : 0;
+uint8_t apc_set_acc_mode(double v) {
+	return apc_p_set_u32_from_double(P_ID_ACC_MODE, v) ? 1 : 0;
 }
 
-uint8_t apc_set_ctl_mode(uint32_t v) {
-	return apc_p_set_u32(P_ID_CONTROL_MODE, v) ? 1 : 0;
+uint8_t apc_set_ctl_mode(double v) {
+	return apc_p_set_u32_from_double(P_ID_CONTROL_MODE, v) ? 1 : 0;
 }
 
 uint8_t apc_get_ctl_mode(double *out) {
@@ -237,8 +261,8 @@ uint8_t apc_get_valve_state(double *out) {
 
 //  ----- POSITION CONTROL -----
 
-uint8_t apc_set_pos(uint32_t v) {
-	return apc_p_set_u32(P_ID_TARGET_POS, v) ? 1 : 0;
+uint8_t apc_set_pos(double v) {
+	return apc_p_set_f(P_ID_TARGET_POS, v) ? 1 : 0;
 }
 uint8_t apc_get_pos(double *out) {
 	char line[64];
@@ -248,8 +272,8 @@ uint8_t apc_get_pos(double *out) {
 }
 
 
-uint8_t apc_set_pos_ctl_spd(uint32_t v) {
-	return apc_p_set_u32(P_ID_POS_SPEED, v) ? 1 : 0;
+uint8_t apc_set_pos_ctl_spd(double v) {
+	return apc_p_set_f(P_ID_POS_SPEED, v) ? 1 : 0;
 }
 
 uint8_t apc_get_pos_ctl_spd(double *out) {
@@ -259,8 +283,8 @@ uint8_t apc_get_pos_ctl_spd(double *out) {
 	return apc_parse_p_value_double(line, P_ID_POS_SPEED, out) ? 1 : 0;
 }
 
-uint8_t apc_set_pos_ramp_en(uint32_t en) {
-	return apc_p_set_u32(P_ID_RAMP_ENABLE_POS, !!en) ? 1 : 0;
+uint8_t apc_set_pos_ramp_en(double en) {
+	return apc_p_set_u32_from_double(P_ID_RAMP_ENABLE_POS, !!en) ? 1 : 0;
 }
 
 uint8_t apc_get_pos_ramp_en(double *out) {
@@ -270,8 +294,8 @@ uint8_t apc_get_pos_ramp_en(double *out) {
 	return apc_parse_p_value_double(line, P_ID_RAMP_ENABLE_POS, out) ? 1 : 0;
 }
 
-uint8_t apc_set_pos_ramp_time(uint32_t v) {
-	return apc_p_set_u32(P_ID_RAMP_TIME_POS, v) ? 1 : 0;
+uint8_t apc_set_pos_ramp_time(double v) {
+	return apc_p_set_f(P_ID_RAMP_TIME_POS, v) ? 1 : 0;
 } // units per CPA
 uint8_t apc_get_pos_ramp_time(double *out) {
 	char line[64];
@@ -280,8 +304,8 @@ uint8_t apc_get_pos_ramp_time(double *out) {
 	return apc_parse_p_value_double(line, P_ID_RAMP_TIME_POS, out) ? 1 : 0;
 }
 // RAM:SLP / RAM:SLP?
-uint8_t apc_set_pos_ramp_slope(uint32_t v) {
-	return apc_p_set_u32(P_ID_RAMP_SLOPE_POS, v) ? 1 : 0;
+uint8_t apc_set_pos_ramp_slope(double v) {
+	return apc_p_set_f(P_ID_RAMP_SLOPE_POS, v) ? 1 : 0;
 }
 uint8_t apc_get_pos_ramp_slope(double *out) {
 	char line[64];
@@ -290,8 +314,8 @@ uint8_t apc_get_pos_ramp_slope(double *out) {
 	return apc_parse_p_value_double(line, P_ID_RAMP_SLOPE_POS, out) ? 1 : 0;
 }
 
-uint8_t apc_set_pos_ramp_mode(uint32_t v) {
-	return apc_p_set_u32(P_ID_RAMP_MODE_POS, v) ? 1 : 0;
+uint8_t apc_set_pos_ramp_mode(double v) {
+	return apc_p_set_u32_from_double(P_ID_RAMP_MODE_POS, v) ? 1 : 0;
 }
 uint8_t apc_get_pos_ramp_mode(double *out) {
 	char line[64];
@@ -303,8 +327,8 @@ uint8_t apc_get_pos_ramp_mode(double *out) {
 
 //  ----- PRESSURE CONTROL -----
 
-uint8_t apc_set_pre(uint32_t v) {
-	return apc_p_set_u32(P_ID_TARGET_PRE, v) ? 1 : 0;
+uint8_t apc_set_pre(double v) {
+	return apc_p_set_f(P_ID_TARGET_PRE, v) ? 1 : 0;
 }
 uint8_t apc_get_pre(double *out) {
 	char line[64];
@@ -313,8 +337,8 @@ uint8_t apc_get_pre(double *out) {
 	return apc_parse_p_value_double(line, P_ID_ACT_PRE, out) ? 1 : 0;
 }
 
-uint8_t apc_set_pre_speed(uint32_t v) {
-	return apc_p_set_u32(P_ID_PRE_SPEED, v) ? 1 : 0;
+uint8_t apc_set_pre_speed(double v) {
+	return apc_p_set_f(P_ID_PRE_SPEED, v) ? 1 : 0;
 }
 uint8_t apc_get_pre_speed(double *out) {
 	char line[64];
@@ -323,8 +347,8 @@ uint8_t apc_get_pre_speed(double *out) {
 	return apc_parse_p_value_double(line, P_ID_PRE_SPEED, out) ? 1 : 0;
 }
 
-uint8_t apc_set_pre_unit(uint32_t v) {
-	return apc_p_set_u32(P_ID_PRESS_UNIT, v) ? 1 : 0;
+uint8_t apc_set_pre_unit(double v) {
+	return apc_p_set_u32_from_double(P_ID_PRESS_UNIT, v) ? 1 : 0;
 }
 uint8_t apc_get_pre_unit(double *out) {
 	char line[64];
@@ -334,8 +358,8 @@ uint8_t apc_get_pre_unit(double *out) {
 }
 
 // APC:CTL:SEL / APC:CTL:SEL?
-uint8_t apc_set_ctlr_selector(uint32_t v){    // v scaled per scheme
-    return apc_p_set_u32(P_ID_CTLR_SELECTOR, v) ? 1 : 0;
+uint8_t apc_set_ctlr_selector(double v){    // v scaled per scheme
+    return apc_p_set_u32_from_double(P_ID_CTLR_SELECTOR, v) ? 1 : 0;
 }
 uint8_t apc_get_ctlr_selector(double *out) {
 	char line[64];

@@ -162,6 +162,12 @@ enum GB_CMDList{
 //die max.Größe der ASCII-Tabelle
 #define ASCII_CMD_MAX			180
 #define BINARY_INDEX_MAX		256
-#define CMD_LENGTH				30
+#define CMD_LENGTH_MAX			30
+
+void Binary_Search(uint8_t ncmd, char *key, uint16_t *cmdindex);
+uint8_t isDec(const char *str);
+uint8_t isHex(const char *str, int32_t *val);
+float str2float (const char * str);
+int32_t str2int (const char *str) ;
 
 #endif /* CMDLIST_H_ */

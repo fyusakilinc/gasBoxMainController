@@ -11,3 +11,4 @@ I don't know what the APC commands are = for PVC, these have been added but erro
 I can set and get the ISO pins, but what are they for? There are digital out in blocks for them ++ (They were for DIOs, added them to cmdlist)
 Xport has not been added --
 APC can be not init correctly. -- continue from the p commands, analyze get function and readline function, atm the get pos and set pos might not work because changed them to the p func, but not in cmd_sero
+- when setting the apc, can try to read back to ensure it has correctly set it?

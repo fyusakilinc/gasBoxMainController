@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "remote.h"
 #include "uart4.h"
 #include "usart.h"
@@ -12,14 +13,19 @@
 
 // ---- framing ----
 #define RMT_MAX_PAKET_LENGTH  14
+#define TOKEN_LENGTH_MAX  32
 #define RMT_DLE               0x3D   // '='
 #define RMT_SOT               0x53   // 'S'
 #define RMT_EOT               0x45   // 'E'
 
-// parser states
-#define RMT_WAIT_FOR_PAKET_START  1
-#define RMT_READ_PAKET            2
-#define RMT_PARSE_PAKET           3
+
+typedef enum {
+    S_WAIT_CMD = 0,
+    S_GET_CMD,
+    S_GET_SIGN_OR_DIGIT,
+    S_GET_VAL,
+    S_PROC_CMD
+} ap_state_t;
 
 //----- PRIVATE DEFINES -------------------------------------------------------
 // die Zustandsdefinitionen fuer die Zustandsautomaten im ASCII-PROTOKOLL
@@ -31,155 +37,18 @@
 //die max.Größe der ASCII-Tabelle
 #define ASCII_CMD_MAX			180
 #define BINARY_INDEX_MAX		256
-#define CMD_LENGTH				19
+#define CMD_LENGTH_MAX			32
 
 #define CMD_MIN_RFG  89
 #define CMD_MAX_RFG  149
 
 //--- PRIVATE VARIABLES------------------------------------------------------------------------------------------------------
 //Definition der Struktur des Elementes der Ascii-Tabelle
-typedef struct {
-	char cmdline[CMD_LENGTH];           //für ASCII-Befehl
-	uint16_t cmdindex;					//interne Befehlnummer
-//uint8_t cmdattribut;				//gibt an, dass der Befehl READ/WRITE-Operation ist.
-} Cmdline_Item;
-
-//Definition der ASCII-Tabelle
-static const Cmdline_Item ASCIICmdTable[] = {
-		{"GAS:V3",  	CMD_V3_SET },
-		{"GAS:V3?", 	CMD_V3_GET },
-		{"GAS:V4", 		CMD_V4_SET },
-		{"GAS:V4?",		CMD_V4_GET },
-		{"GAS:PDE",		CMD_SET_GAS_PDE },
-		{"GAS:PDE?",	CMD_GET_GAS_PDE },
-		{"GAS:PDE:CLS",	CMD_CLOSE_GAS_PDE },
-		{"GAS:PDE:STA?",CMD_STAT_GAS_PDE },
-		{"GAS:AIR", 	CMD_SET_GAS_AIR },
-		{"GAS:AIR?",	CMD_GET_GAS_AIR },
-		{"GAS:AIR:CLS",	CMD_CLOSE_GAS_AIR },
-		{"GAS:AIR:STA?",CMD_STAT_GAS_AIR },
-		{"GAS:O2", 		CMD_SET_GAS_O2 },
-		{"GAS:O2?",		CMD_GET_GAS_O2 },
-		{"GAS:O2:CLS",	CMD_CLOSE_GAS_O2 },
-		{"GAS:O2:STA?",	CMD_STAT_GAS_O2 },
-		{"GAS:MFC4", 	CMD_SET_GAS_4 },
-		{"GAS:MFC4?",	CMD_GET_GAS_4 },
-		{"GAS:MFC4:CLS",CMD_CLOSE_GAS_4 },
-		{"GAS:MFC4:STA?",CMD_STAT_GAS_4 },
-		{"PUM", 		CMD_PUMP_SET },   // usage: "PUM 1;" or "PUM 0;"
-		{"PUM?", 		CMD_PUMP_GET },   // returns 0/1 (running)
-		{"PUM:STA?", 	CMD_PUMP_GET_STA }, // MP start/running status (DI)
-		{"PUM:WAR?", 	CMD_PUMP_GET_WAR }, // warning bit (DI)
-		{"PUM:ALA?", 	CMD_PUMP_GET_ALA }, // alarm bit (DI)
-		{"PUM:REM?", 	CMD_PUMP_GET_RMT }, // remote bit (DI)
-		{"CHA:T", 		CMD_SET_T }, 		// set chamber temp
-		{"CHA:T?", 		CMD_GET_T }, 		// get chamber temp
-		{"APC:CTL",		CMD_APC_CTL},
-		{"APC:AMD?",	CMD_APC_AMD_RD },
-		{"APC:AMD",		CMD_APC_AMD },
-		{"APC:CTL:SEL?",CMD_APC_CTL_SEL_RD },
-		{"APC:CTL:SEL",	CMD_APC_CTL_SEL },
-		{"APC:ERN",		CMD_APC_ERN_RD },
-		{"APC:ERC",		CMD_APC_ERC_RD },
-		{"APC:VAL",		CMD_APC_VAL },
-		{"APC:VAL?",	CMD_APC_VAL_RD },
-		{"APC:POS",		CMD_APC_POS },
-		{"APC:POS?",	CMD_APC_POS_RD },
-		{"APC:POS:SPD",	CMD_APC_POS_SPD },
-		{"APC:POS:SPD?",CMD_APC_POS_SPD_RD },
-		{"APC:RAM",		CMD_APC_POS_RAM },
-		{"APC:RAM?",	CMD_APC_POS_RAM_RD },
-		{"APC:RAM:TI",	CMD_APC_POS_TI },
-		{"APC:RAM:TI?",	CMD_APC_POS_TI_RD },
-		{"APC:RAM:SLP",	CMD_APC_POS_SLP },
-		{"APC:RAM:SLP?",CMD_APC_POS_SLP_RD },
-		{"APC:RAM:MD",	CMD_APC_POS_MD },
-		{"APC:RAM:MD?",	CMD_APC_POS_MD_RD },
-		{"APC:PRE",		CMD_APC_PRE },
-		{"APC:PRE?",	CMD_APC_PRE_RD },
-		{"APC:PRE:SPD",	CMD_APC_PRE_SPD },
-		{"APC:PRE:SPD?",CMD_APC_PRE_SPD_RD },
-		{"APC:PRE:UNT",	CMD_APC_PRE_UNT },
-		{"APC:PRE:UNT?",CMD_APC_PRE_UNT_RD },
-		{"APC:POS:STA", CMD_POS_STA_RD },
-		{"ISO:V1",		CMD_ISO_V1 },
-		{"ISO:V1?",		CMD_ISO_V1_RD },
-		{"REL",			CMD_REL },
-		{"REL?",		CMD_REL_RD },
-		{"BUZ",			CMD_BUZ },
-		{"BUZ?",		CMD_BUZ_RD },
-		{"SYS:LED",		CMD_SYS_LED },
-		{"SYS:LED?",	CMD_SYS_LED_RD },
-		{"PUM:LED",		CMD_PUM_LED },
-		{"PUM:LED?",	CMD_PUM_LED_RD },
-		{"ATM?",		CMD_ATM_RD },
-		{"DOOR:SWM?",	CMD_DOOR_SWM_RD },
-		{"AIR?",		CMD_AIR_RD },
-		{"FRT:STP?",	CMD_STP_RD },
-		{"RF",			CMD_RF },
-		{"RF?",			CMD_RF_RD },
-		{"SPC:CTL",		CMD_SPC_CTL },
-		{"SPC:CTL?",	CMD_SPC_CTL_RD },
-		{"SPC:T?",		CMD_SPC_T_RD },
-		{"SPC:UDC?",	CMD_SPC_UDC_RD },
-		{"PWR:PF?",		CMD_PWR_PF_RD },
-		{"PWR:PF",		CMD_PWR_PF },
-		{"PWR:PFS?",	CMD_PWR_PFS_RD },
-		{"PWR:PMD",		CMD_PWR_PMD },
-		{"PWR:PMD?",	CMD_PWR_PMD_RD },
-		{"PWR:PMDS?",	CMD_PWR_PMDS_RD },
-		{"PWR:PREA",	CMD_PWR_PREA },
-		{"PWR:PREA?",	CMD_PWR_PREA_RD },
-		{"PWR:PREAS?",	CMD_PWR_PREAS_RD },
-		{"PWR:DCB",		CMD_PWR_DCB },
-		{"PWR:DCB?",	CMD_PWR_DCB_RD },
-		{"PWR:DCBS?",	CMD_PWR_DCBS_RD },
-		{"PLS:P?",		CMD_PLS_P_RD },
-		{"PLS:P",		CMD_PLS_P },
-		{"PLS:LEN?",	CMD_PLS_LEN_RD },
-		{"PLS:LEN",		CMD_PLS_LEN },
-		{"PLS:PER?",	CMD_PLS_PER_RD },
-		{"PLS:PER",		CMD_PLS_PER },
-		{"IGN:CL?",		CMD_IGN_CL_RD },
-		{"IGN:CL",		CMD_IGN_CL },
-		{"IGN:CT?",		CMD_IGN_CT_RD },
-		{"IGN:CT",		CMD_IGN_CT },
-		{"IGN:I?",		CMD_IGN_I_RD },
-		{"IGN:I",		CMD_IGN_I },
-		{"IGN:PFI?",	CMD_IGN_PFI_RD },
-		{"IGN:PFI",		CMD_IGN_PFI },
-		{"IGN:TI?",		CMD_IGN_TI_RD },
-		{"IGN:TI",		CMD_IGN_TI },
-		{"IGN:TS?",		CMD_IGN_TS_RD },
-		{"IGN:TS",		CMD_IGN_TS },
-		{"TI:RST?",		CMD_TI_RST_RD },
-		{"TI:RST",		CMD_TI_RST },
-		{"MAT:MAT:CT?",		CMD_MAT_CT_RD },
-		{"MAT:MAT:CT",		CMD_MAT_CT },
-		{"MAT:MAT:CTS?",	CMD_MAT_CTS_RD },
-		{"MAT:MAT:CL?",		CMD_MAT_CL_RD },
-		{"MAT:MAT:CL",		CMD_MAT_CL },
-		{"MAT:MAT:CLS?",	CMD_MAT_CLS_RD },
-		{"MAT:MAT:MMD?",	CMD_MAT_MMD_RD },
-		{"MAT:MAT:MMD",		CMD_MAT_MMD },
-		{"MAT:SPC:EEP:PROF?",	CMD_EE_PRF_RD },
-		{"MAT:SPC:EEP:LDPROF",	CMD_EE_LDPRF },
-		{"MAT:SPC:EEP:DPROF?",	CMD_EE_DPRF_RD },
-		{"MAT:SPC:EEP:DPROF",	CMD_EE_DPRF },
-		{"MAT:SPC:T?",			CMD_MAT_T_RD },
-		{"MAT:SPC:EEP:STPROF",	CMD_EE_STPRF },
-		};
-
-//Definition der Einstellungsparameter für die Kommunikation mit ASCII-PROTOKOLL
-volatile static uint8_t verbose = 0;
-volatile static uint8_t crlf = 0;
-volatile static uint8_t echo = 0;
-volatile static uint8_t sloppy = 0;
 
 // ---- internal parser storage ----
-static volatile uint8_t msg[RMT_MAX_PAKET_LENGTH + 1];
+static volatile uint8_t msg[CMD_LENGTH_MAX  + 1];
 static volatile uint8_t nzeichen = 0;       // bytes buffered from UART ring
-static uint8_t state = RMT_WAIT_FOR_PAKET_START;
+static uint8_t state = S_WAIT_CMD;
 
 static uint8_t bufferRx[RMT_MAX_PAKET_LENGTH + 1];
 static uint8_t lengthRx = 0;
@@ -189,24 +58,47 @@ static uint8_t checksum = 0;
 // forward
 void parse_ascii(void);
 void output_ascii(int32_t);
-void Binary_Search(uint8_t ncmd, char *key, uint16_t *cmdindex);
-void output_ascii_cmdack(uint8_t verbose_flg, uint8_t crlf_flg, uint8_t cmd_ack);
+void Binary_Search(uint8_t ncmd, char *key, uint8_t *cmdindex);
+void output_ascii_cmdack(uint8_t cmd_ack);
+
+// passthrough to RFG
+//#define RFG_PASSTHRU
+#ifdef RFG_PASSTHRU
+static void forward_cmd(const char *cmdtxt, const char *valtxt) {
+    char out[2*TOKEN_LENGTH_MAX + 16];
+    int n = (valtxt && valtxt[0])
+          ? snprintf(out, sizeof(out), "%s %s;\r\n", cmdtxt, valtxt)
+          : snprintf(out, sizeof(out), "%s;\r\n",     cmdtxt);
+    if (n > 0) { uart_puts_rb(&uart4_rb, out); uartRB_KickTx(&uart4_rb); }
+}
+#endif
+
+static inline void ap_reset_state(char *cmd, uint8_t *cmd_len,
+                                  char *vbuf, uint8_t *vlen,
+                                  volatile uint8_t *pflag, volatile uint8_t *eflag,
+                                  volatile uint8_t *a_state){
+    *cmd_len = 0; cmd[0] = '\0';
+    *vlen = 0; vbuf[0] = '\0';
+    *pflag = 0; *eflag = 0;
+    *a_state = S_WAIT_CMD;
+}
 
 // ---- public API ----
 void remote_init(void) {
 	nzeichen = 0;
-	state = RMT_WAIT_FOR_PAKET_START;
+	state = S_WAIT_CMD;
 	lengthRx = 0;
 	dleFlag = 0;
 	checksum = 0;
 	memset((void*) msg, 0, sizeof(msg));
 	memset(bufferRx, 0, sizeof(bufferRx));
+
 }
 
 // Pull bytes from UART4 RX ring into msg[] and feed parser
 void remote_sero_get(void) {
 	nzeichen = 0;
-	while ((rb_rx_used(&usart2_rb) > 0) && (nzeichen < RMT_MAX_PAKET_LENGTH)) {
+	while ((rb_rx_used(&usart2_rb) > 0) && (nzeichen < CMD_LENGTH_MAX)) {
 		msg[nzeichen++] = (uint8_t) uartRB_Getc(&usart2_rb);   // legacy getc()
 	}
 	if (nzeichen)
@@ -216,299 +108,157 @@ void remote_sero_get(void) {
 // das Paket in ASCII-Format analysieren und das Paket in den Stack einfügen.
 void parse_ascii(void) {
 
-	static char cmd[25] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-			0, 0, 0, 0, 0, 0, 0, 0 };
-	static char char1[2] = { 0, 0 };
-	volatile static uint8_t ret = 0;
-	volatile static uint8_t nc = 0;
-	volatile static int32_t val = 0;
-	volatile static uint8_t a_state = get_cmd;
+	static char cmd[CMD_LENGTH_MAX+1] ="\0";
+	static uint8_t cmd_len = 0;
 
+	static char  vbuf[TOKEN_LENGTH_MAX+1] = "\0";   // raw value text (for forwarding / precise parse)
+	static uint8_t vlen = 0;
+
+	static volatile uint8_t nc=0;
+	//volatile static int32_t val = 0;
+	volatile static uint8_t a_state = S_WAIT_CMD;
 	volatile static uint8_t pflag = 0;
 	volatile static uint8_t eflag = 0;
 
-	static uint8_t negativ_zahl = 0;
-
 	uint8_t ptr = 0;
-	uint16_t cmd_index = BINARY_INDEX_MAX;
 
-	stack_item stack_data;
+	//stack_item stack_data;
 
 	do {
 		// wenn es ein Zeichen in UART1 Buffer gibt und die Automate nicht im Bearbeitungszustand ist
 		if ((nzeichen > 0) && (a_state != proc_cmd)) {
 			nc = msg[ptr++];				// hole ein Zeichen aus msg-buffer
-			if (echo == 1)// Wenn die Kommunikationsmode im Echo-Mode ist, wird es das Zeichen direkt wieder zurückgeben.
-					{
-				char1[0] = nc;
-				uartRB_Put(&usart2_rb, char1, 1);
-			}
 		} else
 			nc = 0;
 
-		if (strlen(cmd) > 22)// Ascii-Kommando darf nicht länger als 22 Zeichen.
-				{
-			strcpy(cmd, "");
-			val = 0;
-			pflag = 0;
-			eflag = 0;
-			a_state = get_cmd;
+		//len = strlen(cmd);
+
+		if (eflag == 1) {
+			if ((nc == 32) || (nc == 13) || (nc == 10)) {
+				a_state = S_PROC_CMD;
+			}
 		}
 
 		switch (a_state) {
-		case get_cmd:
-			if (((nc >= 65) && (nc <= 90)) || ((nc >= 48) && (nc <= 57))
-					|| (nc == 58) || (nc == 63)) {
-				char1[0] = nc;				//verkette char1 an cmd
-				strcat(cmd, char1);
-			} else if ((nc == 46) && (sloppy == 1)) {
-				char1[0] = 58;
-				strcat(cmd, char1);
-			} else if ((nc == 35) && (sloppy == 1)) {
-				char1[0] = 63;
-				strcat(cmd, char1);
-			} else if ((nc >= 97) && (nc <= 122)) {
-				char1[0] = (nc - 32);
-				strcat(cmd, char1);
-			} else if (nc == 32) {
-				if (strlen(cmd) > 0) {
-					val = 0;
-					a_state = get_sign;
-				}
-			} else if ((nc == 59) || ((nc == 13) && (sloppy == 1))) {
-				a_state = proc_cmd;
+		case S_WAIT_CMD:
+			// skip leading spaces, CR/LF
+			if (nc == ' ' || nc == '\t' || nc == '\r' || nc == '\n')
+				break;
+			// start command token
+			cmd_len = 0;
+			if (cmd_len < TOKEN_LENGTH_MAX - 1) {
+				cmd[cmd_len++] = (char) nc;
+				cmd[cmd_len] = '\0';
+			}
+			a_state = S_GET_CMD;
+			break;
+
+		case S_GET_CMD:
+			if (nc == ';' || nc == '\r' || nc == '\n') {
+				a_state = S_PROC_CMD;  // READ (no value)
+				break;
+			}
+			if (nc == ' ' || nc == '\t') {
+				a_state = S_GET_SIGN_OR_DIGIT; // space before value
+				break;
+			}
+			if (cmd_len < TOKEN_LENGTH_MAX - 1) {
+				cmd[cmd_len++] = (char) nc;
+				cmd[cmd_len] = '\0';
 			} else {
-				if (nc != 0)
-					strcat(cmd, "*");
+				eflag = 1;
+				a_state = S_PROC_CMD;
 			}
 			break;
 
-		case get_sign:
-			if (nc == 45) {
-				negativ_zahl = 1;
-				a_state = get_val;
+		case S_GET_SIGN_OR_DIGIT:
+			if (nc == ';' || nc == '\r' || nc == '\n') {
+				a_state = S_PROC_CMD;
 				break;
-			} else if ((nc >= 48) && (nc <= 57) && (val < INT32_MAX)) //val < 1000000
-					{
-				val = val * 10 + (nc - 48);
+			}
+			if (nc == ' ' || nc == '\t')
+				break; // still skipping whitespace
+			// start value token (accept -, +, digit, '.' to allow .5)
+			if ((nc == '-') || (nc == '+') || (nc == '.')
+					|| (nc >= '0' && nc <= '9')) {
+				vlen = 0;
+				if (vlen < TOKEN_LENGTH_MAX - 1) {
+					vbuf[vlen++] = (char) nc;
+					vbuf[vlen] = '\0';
+				}
 				pflag = 1;
-				a_state = get_val;
-				break;
-			} else if ((nc == 59) || (nc == 13)) {
-				a_state = proc_cmd;
+				a_state = S_GET_VAL;
 			} else {
-				if (nc != 0) {
-					negativ_zahl = 0;
-					val = 0;
-					pflag = 0;
+				eflag = 1;
+				a_state = S_PROC_CMD;
+			}
+			break;
+
+		case S_GET_VAL:
+			if (nc == ';' || nc == '\r' || nc == '\n') {
+				a_state = S_PROC_CMD;
+				break;
+			}
+			// Accept digits, dot, exponent, signs inside exponent form
+			if ((nc >= '0' && nc <= '9') || nc == '.' || nc == 'e' || nc == 'E'
+					|| nc == '+' || nc == '-') {
+				if (vlen < TOKEN_LENGTH_MAX - 1) {
+					vbuf[vlen++] = (char) nc;
+					vbuf[vlen] = '\0';
+				} else {
+					eflag = 1;
+					a_state = S_PROC_CMD;
+				} // overflow
+			} else if (nc == ' ' || nc == '\t') {
+				// allow trailing spaces before terminator
+			} else {
+				eflag = 1;
+				a_state = S_PROC_CMD;
+			}
+			break;
+
+		case S_PROC_CMD: {
+			// 1) resolve command
+			uint8_t cmd_id = ASCII_CMD_MAX;
+			Binary_Search(ASCII_CMD_MAX, cmd, &cmd_id);
+
+			// 2) build stack item (READ if no value, WRITE if value present & valid)
+			stack_item si = { 0 };
+			si.cmd_index = cmd_id;
+			si.rwflg = (pflag && !eflag) ? WRITE : READ;
+
+			// parse numeric only if WRITE
+			if (si.rwflg == WRITE) {
+				char *endp = NULL;
+				double dv = strtod(vbuf, &endp);
+				if (endp == vbuf) {
 					eflag = 1;
 				}
-
-			}
-			;
-			break;
-		case get_val:
-
-			if ((nc >= 48) && (nc <= 57) && (val < INT32_MAX))   //val < 1000000
-					{
-				val = val * 10 + (nc - 48);
-				pflag = 1;
-			} else if ((nc == 59) || (nc == 13)) {
-				if (negativ_zahl) {
-					if (pflag == 0) {
-						negativ_zahl = 0;
-						val = 0;
-						pflag = 0;
-						eflag = 1;
-					}
-				}
-				a_state = proc_cmd;
+				si.par0 = (float) dv;  // carry float to worker
 			} else {
-				if (nc != 0) {
-					negativ_zahl = 0;
-					val = 0;
-					pflag = 0;
-					eflag = 1;
-				}
-
+				si.par0 = 0.0f;
 			}
-			break;
 
-		case proc_cmd:
-
-			if (eflag == 1) {
-				ret = CMR_MALFORMATTEDCOMMAND;
+			// 3) enqueue or report error
+			if (eflag || cmd_id >= ASCII_CMD_MAX) {
+				// optional: your error reporting
+				// output_ascii_error(CMR_BADCOMMAND);
+			} else {
+				(void) stack_insert_sero(si);
 			}
-			//hier beginnt die Verarbeitung der Befehle zum Einstellen der Kommunikation
-			else if (strcmp(cmd, "VERB") == 0) {
-				if (pflag == 0) {
-					ret = CMR_MISSINGPARAMETER;
-				} else {
-					switch (val) {
-					case 0:
-						verbose = 0;
-						ret = CMR_SUCCESSFULL;
-						break;
-					case 1:
-						verbose = 1;
-						ret = CMR_SUCCESSFULL;
-						break;
-					case 2:
-						verbose = 2;
-						ret = CMR_SUCCESSFULL;
-						break;
-					default:
-						ret = CMR_PARAMETERINVALID;
-						break;
-					};
-				}
-			} else if (strcmp(cmd, "ECHO") == 0) {
-				if (pflag == 0) {
-					ret = CMR_MISSINGPARAMETER;
-				} else {
-					if (val == 0) {
-						echo = 0;
-						ret = CMR_SUCCESSFULL;
-					} else if (val == 1) {
-						echo = 1;
-						ret = CMR_SUCCESSFULL;
-					} else {
-						ret = CMR_PARAMETERINVALID;
-					}
-				}
-			} else if (strcmp(cmd, "CRLF") == 0) {
-				if (pflag == 0) {
-					ret = CMR_MISSINGPARAMETER;
-				} else {
-					if (val == 0) {
-						crlf = 0;
-						ret = CMR_SUCCESSFULL;
-					} else if (val == 1) {
-						crlf = 1;
-						ret = CMR_SUCCESSFULL;
-					} else if (val == 2) {
-						crlf = 2;
-						ret = CMR_SUCCESSFULL;
-					} else if (val == 3) {
-						crlf = 3;
-						ret = CMR_SUCCESSFULL;
-					} else {
-						ret = CMR_PARAMETERINVALID;
-					}
-				}
-			} else if (strcmp(cmd, "SLOPPY") == 0) {
-				if (pflag == 0) {
-					ret = CMR_MISSINGPARAMETER;
-				} else {
-					if (val == 0) {
-						sloppy = 0;
-						ret = CMR_SUCCESSFULL;
-					} else if (val == 1) {
-						sloppy = 1;
-						ret = CMR_SUCCESSFULL;
-					} else {
-						ret = CMR_PARAMETERINVALID;
-					}
-				}
-			} else if (strcmp(cmd, "IBL") == 0) {
-				verbose = 2;
-				echo = 1;
-				crlf = 3;
-				sloppy = 1;
-				ret = CMR_SUCCESSFULL;
-			} else if (strcmp(cmd, "") == 0) {
-				ret = CMR_SEMICOLONONLY;
-			}
-			//die anderen ASCII-Befehle werden per Binäre-Suche-Funktion eine interne Befehlnummer und ein Attribut zugeordnet
-			//und in den Stack eingefügt.
-			else {
-				Binary_Search(ASCII_CMD_MAX, cmd, &cmd_index);
-				//uart0_puts(cmd);
-				//uart0_puti(cmd_index);
 
-				// upuntil line 452, we just send the command from PC that corresponds to RFG one directly to the RFG
-				if (cmd_index >= CMD_MIN_RFG && cmd_index <= CMD_MAX_RFG) {
-				    // Forward full command line to UART4 and skip local handling
-				    char out[96];
-				    int32_t nval = negativ_zahl ? -val : val;
-				    int n = (pflag == 1)
-				          ? snprintf(out, sizeof(out), "%s %ld;\r\n", cmd, (long)nval)
-				          : snprintf(out, sizeof(out), "%s;\r\n",       cmd);
+			// 4) optional passthrough
+#ifdef RFG_PASSTHRU
+		        forward_cmd(cmd, (si.rwflg==WRITE) ? vbuf : NULL);
+		        #endif
 
-				    if (n > 0) {
-				        uartRB_Put(&uart4_rb ,(const uint8_t*)out, (uint16_t)n);
-				        uartRB_KickTx(&uart4_rb);
-				    }
-
-				    // reset parser state & exit this case
-				    strcpy(cmd, "");
-				    val = 0; pflag = 0; eflag = 0; negativ_zahl = 0;
-				    a_state = get_cmd;
-				    break;
-				}
-
-				if (cmd_index != BINARY_INDEX_MAX) {
-					stack_data.cmd_sender = Q_RS232_ASCII;
-					stack_data.cmd_index = cmd_index;
-					stack_data.cmd_ack = 0;
-					stack_data.next = NONEXT;
-					stack_data.prio = PRIO_LEVEL1;
-
-					if (cmd_index & 1) {
-
-						if ((pflag == 1)) {
-							if (negativ_zahl) {
-								stack_data.parameter = -val;
-							} else {
-								stack_data.parameter = val;
-							}
-
-							stack_data.rwflg = WRITE;
-							ret = stack_insert_sero(stack_data);
-							//uart0_puti(ret);
-							//uart0_puti(stack_data.cmd_index);
-
-						} else if (cmd_index == CMD_RESET_ERROR) {
-							stack_data.parameter = 0;
-							stack_data.rwflg = WRITE;
-							ret = stack_insert_sero(stack_data);
-						} else {
-							{
-								ret = CMR_MISSINGPARAMETER;
-							}
-						};
-					} else  //Lese-Operation
-					{
-						stack_data.parameter = 0;
-						stack_data.rwflg = READ;
-						ret = stack_insert_sero(stack_data);
-					};
-
-				} else //Falls cmd_index = ASCII_CMD_MAX, d.h. der Befehl ist ungültig.
-				{
-					ret = CMR_UNKNOWNCOMMAND;
-				};
-			}
-			;
-
-			if (ret != STACK_CMDINSTACK) {
-				output_ascii_cmdack(verbose, crlf, ret);
-			}
-			;
-
-			uartRB_KickTx(&usart2_rb);
-			strcpy(cmd, "");
-			val = 0;
-			ret = 0;
-			pflag = 0;
-			eflag = 0;
-			negativ_zahl = 0;
-
-			a_state = get_cmd;
+			// 5) reset for next command
+		    ap_reset_state(cmd, &cmd_len, vbuf, &vlen, &pflag, &eflag, &a_state);
+		}
 			break;
 
 		default:
-			a_state = get_cmd;
+			a_state = S_GET_CMD;
 			break;
 
 		};
@@ -554,229 +304,111 @@ void serialSendAnswer(uint8_t *message) {
 	uartRB_KickTx(&usart2_rb);
 }
 
-void output_ascii_cmdack(uint8_t verbose_flg, uint8_t crlf_flg, uint8_t cmd_ack) {
+void output_ascii_cmdack(uint8_t cmd_ack) {
+	char tmp[35];
+	char tmp2[40];
+	tmp2[0] = '\0';   // init before strcat
 
-	if (verbose_flg > 0) {
-		if (cmd_ack == CMR_SUCCESSFULL) {
-			uartRB_Put(&usart2_rb, ">OK;", 4);
-		} else if (cmd_ack == CMR_SEMICOLONONLY) {
-			uartRB_Put(&usart2_rb, ";", 1);
-		} else {
-			if (verbose_flg == 1) {
-				char tmp[10];
-				char tmp2[12];
-				sprintf(tmp, "%3.3u", (cmd_ack & 0x7F));
+	switch(cmd_ack & 0xFF)  //(cmd_ack & 0x7F)
+	{
+		case CMR_COMMANDONDEMAND:
+			strcpy(tmp, "No Answer!");
+			break;
 
-				if (cmd_ack > 128) {
-					strcpy(tmp2, ">W");
-				} else {
-					strcpy(tmp2, ">E");
-				}
-				strcat(tmp2, tmp);
-				strcat(tmp2, ";");
-				uartRB_Put(&usart2_rb, tmp2, strlen(tmp2));
-			} else if (verbose_flg == 2) {
-				char tmp[35];
-				char tmp2[40];
-				if (cmd_ack > 128) {
-					strcpy(tmp2, ">W:");
-				} else {
-					strcpy(tmp2, ">E:");
-				}
+		case CMR_PARAMETERINVALID:
+			strcpy(tmp, "Parameter Invalid!");
+			break;
 
-				switch (cmd_ack & 0xFF)          //(cmd_ack & 0x7F)
-				{
-				case CMR_COMMANDONDEMAND:
-					strcpy(tmp, "No Answer!");
-					break;
+		case CMR_PARAMETERCLIPEDMIN:
+			strcpy(tmp, "Parameter Clipped to Minimum!");
+			break;
 
-				case CMR_PARAMETERINVALID:
-					strcpy(tmp, "Parameter Invalid!");
-					break;
+		case CMR_PARAMETERCLIPEDMAX:
+			strcpy(tmp, "Parameter Clipped to Maximum!");
+			break;
 
-				case CMR_PARAMETERCLIPEDMIN:
-					strcpy(tmp, "Parameter Clipped to Minimum!");
-					break;
+		case CMR_PARAMETERADJUSTED:
+			strcpy(tmp, "Parameter Adjusted!");
+			break;
 
-				case CMR_PARAMETERCLIPEDMAX:
-					strcpy(tmp, "Parameter Clipped to Maximum!");
-					break;
+		case CMR_WRONGPARAMETERFORMAT:
+			strcpy(tmp, "Wrong Parameter Format!");
+			break;
 
-				case CMR_PARAMETERADJUSTED:
-					strcpy(tmp, "Parameter Adjusted!");
-					break;
+		case CMR_UNKNOWNCOMMAND:
+			strcpy(tmp, "Unknown Command!");
+			break;
 
-				case CMR_WRONGPARAMETERFORMAT:
-					strcpy(tmp, "Wrong Parameter Format!");
-					break;
+		case CMR_COMMANDDENIED:
+			strcpy(tmp, "Command Denied!");
+			break;
 
-				case CMR_UNKNOWNCOMMAND:
-					strcpy(tmp, "Unknown Command!");
-					break;
+		case CMR_COMMANDNOTSUPPORTED:
+			strcpy(tmp, "Command Not Supported!");
+			break;
 
-				case CMR_COMMANDDENIED:
-					strcpy(tmp, "Command Denied!");
-					break;
+		case CMR_EEPROMERROR:
+			strcpy(tmp, "EEPROM Error!");
+			break;
 
-				case CMR_COMMANDNOTSUPPORTED:
-					strcpy(tmp, "Command Not Supported!");
-					break;
+		case CMR_EEPWRLOCKED:
+			strcpy(tmp, "EEPROM Write Lock!");
+			break;
 
-				case CMR_EEPROMERROR:
-					strcpy(tmp, "EEPROM Error!");
-					break;
+		case CMR_WRONGOPMODE:
+			strcpy(tmp, "Wrong Operation Mode!");
+			break;
 
-				case CMR_EEPWRLOCKED:
-					strcpy(tmp, "EEPROM Write Lock!");
-					break;
+		case CMR_UNITBUSY:
+			strcpy(tmp, "Unit Busy!");
+			break;
 
-				case CMR_WRONGOPMODE:
-					strcpy(tmp, "Wrong Operation Mode!");
-					break;
+		case CMR_MISSINGPARAMETER:
+			strcpy(tmp, "Missing Parameter!");
+			break;
 
-				case CMR_UNITBUSY:
-					strcpy(tmp, "Unit Busy!");
-					break;
+		case CMR_OPTIONNOTINSTALLED:
+			strcpy(tmp, "Required Option Not Installed!");
+			break;
 
-				case CMR_MISSINGPARAMETER:
-					strcpy(tmp, "Missing Parameter!");
-					break;
+		case CMR_MALFORMATTEDCOMMAND:
+			strcpy(tmp, "Malformatted Command!");
+			break;
 
-				case CMR_OPTIONNOTINSTALLED:
-					strcpy(tmp, "Required Option Not Installed!");
-					break;
+		case STACK_CMDINSTACK:
+			strcpy(tmp, "Ins Stack!");
+			break;
 
-				case CMR_MALFORMATTEDCOMMAND:
-					strcpy(tmp, "Malformatted Command!");
-					break;
-
-				default:
-					sprintf(tmp, "%3.3u", (cmd_ack & 0x7F));
-					break;
-				}
-
-				strcat(tmp2, tmp);
-				strcat(tmp2, ";");
-				uartRB_Put(&usart2_rb, tmp2, strlen(tmp2));
-			}
-		}
-	} else {
-		if (cmd_ack != STACK_CMDINSTACK) {
-			//if (((cmd_ack & 0x80) == CMR_SUCCESSFULL))
-			if ((cmd_ack == CMR_SEMICOLONONLY)
-					|| ((cmd_ack & 0x80) == CMR_SUCCESSFULL))
-				uartRB_Put(&usart2_rb, ";", 1);
-
-		};
+		default:
+			sprintf(tmp,"%3.3u",(cmd_ack & 0x7F));
+			break;
 	}
 
-	if ((crlf_flg & 0x01) > 0) {	//crlf_char= "\r";        //d.h. CR
-		uartRB_Put(&usart2_rb, "\r", 1);
-	}
-	if ((crlf_flg & 0x02) > 0) {	//*crlf_char=";
-		uartRB_Put(&usart2_rb, "\n", 1);
-	}
+	strcat(tmp2,tmp);
+	strcat(tmp2,";");
+	uartRB_Put(&usart2_rb,tmp2, strlen(tmp2));
+	uartRB_KickTx(&usart2_rb);       // ensure TX starts
+}
+
+void output_ascii_ui(uint32_t val) {
+	char tmp[34];
+	sprintf(tmp, "%-lu", val);
+	uartRB_Put(&usart2_rb, tmp, strlen(tmp));
 	uartRB_KickTx(&usart2_rb);
 }
 
-//Die interne Befehlnummer werden für den eingegebenen Befehl zurückgeliefert.
-void Binary_Search(uint8_t ncmd, char *key, uint16_t *cmdindex) {
-	volatile uint16_t low = 0;
-	volatile uint16_t high = ncmd - 1;
-	volatile uint16_t mid;
-	volatile int sflag;
-	volatile uint8_t flag = 0;
-
-	while ((low <= high) && (flag == 0)) {
-		mid = ((low + high) >> 1);
-		sflag = strcmp(key, (char*) &(ASCIICmdTable[mid].cmdline));
-
-		if (sflag < 0) {
-			if (mid != 0) {
-				high = mid - 1;
-			} else {
-				if (low != 0) {
-					high = 0;
-				} else {
-					break;
-				}
-			}
-			flag = 0;
-		} else if (sflag == 0) {
-
-			*cmdindex = ASCIICmdTable[mid].cmdindex;
-			flag = 1;
-		} else {
-			low = mid + 1;
-			flag = 0;
-		}
-
-	};
-
-	if (flag == 0)   //Falls die Tabelle diesen Befehl nicht enthältet,
-			{
-		*cmdindex = BINARY_INDEX_MAX;
-	};
-}
-
-void output_ascii_result(uint8_t verbose_data, uint8_t crlf_data,
-		stack_item *result_data) {
-	//uart0_puts("output");
-	switch (result_data->rwflg) {
-	case READ:
-		switch (result_data->cmd_index) {
-		case CMD_GET_STATUS:
-			//output_ascii_Piii_status(result_data->parameter, verbose_data);
-			break;
-		case CMD_GET_ERR:
-			//output_ascii_Piii_error(result_data->parameter, verbose_data);
-			break;
-		default:
-			if ((result_data->cmd_ack == CMR_SUCCESSFULL)
-					|| (result_data->cmd_ack == CMR_PARAMETERCLIPEDMIN)
-					|| (result_data->cmd_ack == CMR_PARAMETERCLIPEDMAX)
-					|| (result_data->cmd_ack == CMR_PARAMETERADJUSTED)) {
-				output_ascii(result_data->parameter);
-			}
-			break;
-		}
-		;
-		output_ascii_cmdack(verbose_data, crlf_data, result_data->cmd_ack);
-		break;
-	case WRITE:
-		output_ascii_cmdack(verbose_data, crlf_data, result_data->cmd_ack);
-		break;
-	};
-}
-
-void output_binary_result(stack_item *cmd) {
-	uint8_t buffer[7];
-	uint16_t s_tmp = cmd->cmd_sender;
-	uint16_t r_tmp = cmd->cmd_receiver;
-	int32_t param = cmd->parameter;
-
-	buffer[0] = (s_tmp << 5) | (r_tmp << 3);
-	buffer[1] = cmd->cmd_index;
-	buffer[2] = cmd->cmd_ack;
-	buffer[3] = (param >> 24) & 0xFF;
-	buffer[4] = (param >> 16) & 0xFF;
-	buffer[5] = (param >> 8) & 0xFF;
-	buffer[6] = param & 0xFF;
-	serialSendAnswer(buffer);
-}
-
-void output_ascii(int32_t val) {
+void output_ascii_si(int32_t val) {
 	char tmp[34];
 	sprintf(tmp, "%-ld", val);
 	uartRB_Put(&usart2_rb, tmp, strlen(tmp));
 	uartRB_KickTx(&usart2_rb);
 }
 
-uint8_t remote_ascii_verbose(void) {
-	return verbose;
+void output_ascii_fl(float val) {
+	char tmp[34]; // TODO reicht hier die laenge mit timestamp?
+	sprintf(tmp, "%.2f", val); // @suppress("Float formatting support")
+	uartRB_Put(&usart2_rb, tmp, strlen(tmp));
+	uartRB_KickTx(&usart2_rb);
 }
 
-uint8_t remote_ascii_crlf(void) {
-	return crlf;
-}
 

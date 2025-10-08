@@ -22,7 +22,7 @@ uint8_t apc_get_valve_state(uint32_t *out);
 
 
 uint8_t apc_set_pos(uint32_t v);
-uint8_t apc_get_pos(uint32_t *out);
+uint8_t apc_get_pos(double *out);
 uint8_t apc_set_pos_ctl_spd(uint32_t v);
 uint8_t apc_get_pos_ctl_spd(uint32_t *v);
 uint8_t apc_set_pos_ramp_en(uint32_t en);

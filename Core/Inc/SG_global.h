@@ -88,6 +88,15 @@
 
 #define SG_ADM_PIN   		12345ul
 
+#define Q_RS232_XPORT       4
+#define Q_RS232_UT0      	3
+#define Q_ANALOG            2
+#define Q_ZENTRALE          1
+#define NO_QUELLE           0
+
+#define NOCHANZONE         -1
+
+
 #ifndef _STDINT_H
 #include <stdint.h>
 #endif
@@ -98,7 +107,15 @@ typedef struct stack_node
     uint8_t    cmd_receiver;
     uint16_t   cmd_index;
     uint8_t    cmd_ack;
-    int32_t    parameter;
+
+    float    par0;             //hauptsächlich speichert das Paramter von Befehl
+    float    par1;			//int32_t par1...par3 werden nur beim Befehl ohne genaue Channelangabe verwendet.
+    float    par2;
+    float    par3;
+
+    char 	str[20];
+    int8_t    chanzone;  		//vorher uint8_t
+    //int32_t    parameter;
     uint8_t    next;
     uint8_t    prio;
     uint8_t    rwflg;

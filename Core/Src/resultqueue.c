@@ -1,3 +1,4 @@
+#include <string.h>
 #include "SG_global.h"
 #include "uart4.h"
 //#include "uart1.h"
@@ -7,6 +8,7 @@
 #include "prioritylist.h"
 #include "zentrale.h"
 #include "remote.h"
+
 
 //-------------------------PRIVATE DEFINES-----------------------------------------------------------------------------------
 #define RESULT_QUEUE_SIZE  60 //30                  //max. Länge der Warteschlange
@@ -94,34 +96,30 @@ void resultQueue_pop(stack_item *sitem)
 void result_get_sero(void)
 {
 	stack_item cmd_tmp;
-	uint8_t verbose_tmp = remote_ascii_verbose();
-	uint8_t crlf_tmp = remote_ascii_crlf();
 
 	while (get_anzBes_resultQueue() > 0 )
 	{
 		resultQueue_pop(&cmd_tmp);
-		//uart0_puts("result");
-		//uart0_puti(cmd_tmp.cmd_index);
-		//uart0_puti(cmd_tmp.cmd_ack);
-		//uart0_puti(cmd_tmp.parameter);
+
 		switch (cmd_tmp.cmd_sender)
 		{
-			//case Q_TOUCHPANEL:
-				//output_touch_result(&cmd_tmp);
-			//	break;
-			case Q_RS232_ASCII:
-				//uart0_puts("ASC");
-				output_ascii_result(verbose_tmp, crlf_tmp, &cmd_tmp);
-				break;
-			case Q_RS232_BINARY:
-				output_binary_result(&cmd_tmp);
-				break;
-//			case Q_ANALOG:
-//				output_userport_result(&cmd_tmp);
-//			case Q_ZENTRALE:
-//				zentrale_match_get_sero(&cmd_tmp);
-//				break;
-			default:
+			case Q_RS232_UT0:
+				UartRB *rb = &uart4_rb;
+				uart_puti_rb(rb, cmd_tmp.cmd_ack);
+				uartRB_KickTx(rb);
+				uart_puts_rb(rb," ");
+				output_ascii_fl(cmd_tmp.par0);
+				uart_puts_rb(rb," ");
+				output_ascii_fl(cmd_tmp.par1);
+				uart_puts_rb(rb," ");
+				output_ascii_fl(cmd_tmp.par2);
+				uart_puts_rb(rb," ");
+				output_ascii_fl(cmd_tmp.par3);
+				uart_puts_rb(rb," ");
+				if (strlen(cmd_tmp.str) > 0) {
+					uart_puts_rb(rb,cmd_tmp.str);
+				}
+
 				break;
 		};
 	};

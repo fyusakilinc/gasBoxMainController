@@ -48,3 +48,7 @@ extern UartRB uart5_rb;
 extern UartRB usart1_rb;
 extern UartRB usart2_rb;
 extern UartRB usart3_rb;
+
+void uart_puts_rb(UartRB *rb, const char *s);
+void uart_puti_rb(UartRB *rb, long v) ;
+void uart_putf_rb(UartRB *rb, double v);

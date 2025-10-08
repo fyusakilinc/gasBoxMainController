@@ -1,6 +1,3 @@
-//#include <stdio.h>
-//#include <string.h>
-
 #include "SG_global.h"
 #include "protocoll.h"
 #include "cmdlist.h"
@@ -8,10 +5,10 @@
 #include "prioritylist.h"
 #include "priority_pushpop.h"
 #include "resultqueue.h"
-#include "zentrale.h"
 #include "zentrale_cmd_sero.h"
 #include "uart4.h"
 #include "func.h"
+#include "zentrale.h"
 #include "hardware.h"
 #include "gasbox.h"
 #include "ad5592.h"
@@ -29,8 +26,10 @@ void z_cmd_sero(stack_item cmd);           //den einzelnen Befehl zu verarbeiten
 
 //--- FUNKTIONSDEKLARATIONS -------------------------------------------------------------------------------------------------
 //die Mechanimus zur Verarbeitung der Befehle mit den unterschiedlichen Prioritäten
+
 //--- FUNKTIONSDEFINITIONS --------------------------------------------------------------------------------------------------
-void z_cmd_scheduler(void) {
+void z_cmd_scheduler(void)
+{
 	uint8_t priolevel0_null_flg = 0;
 	uint8_t priolevel1_null_flg = 0;
 	uint8_t priolevel2_null_flg = 0;
@@ -42,15 +41,20 @@ void z_cmd_scheduler(void) {
 	uint8_t resultflg = get_anzFrei_resultQueue();
 
 	if (resultflg > 1)          //prüft, ob es noch freien Platz in resultqueue.
+	{
+		do
+		{
+			while ((cmdcount < Z_MAX_HIGHPRIO_NUM) && (priolevel0_null_flg == 0))
 			{
-		do {
-			while ((cmdcount < Z_MAX_HIGHPRIO_NUM) && (priolevel0_null_flg == 0)) {
-				if (z_priolevel_header[PRIO_LEVEL0] != NONEXT) {
+				if (z_priolevel_header[PRIO_LEVEL0] != NONEXT)
+				{
 					zstack_pop(&cmd, PRIO_LEVEL0);
 					z_cmd_sero(cmd);
 					cmdcount++;
 
-				} else {
+				}
+				else
+				{
 					priolevel0_null_flg = 1; //es gibt keinen Befehl in der Prioritätliste mit Level 0
 				};
 			};
@@ -93,22 +97,22 @@ void z_cmd_sero(stack_item cmd) {
 	// -----------
 	// MFC1..MFC4 SET
 	case CMD_SET_GAS_PDE: {
-		uint16_t p = clamp16(cmd.parameter);
+		uint16_t p = clamp16(cmd.par0);
 		cmd.cmd_ack = z_mfc_set(0, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 	case CMD_SET_GAS_AIR: {
-		uint16_t p = clamp16(cmd.parameter);
+		uint16_t p = clamp16(cmd.par0);
 		cmd.cmd_ack = z_mfc_set(1, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 	case CMD_SET_GAS_O2: {
-		uint16_t p = clamp16(cmd.parameter);
+		uint16_t p = clamp16(cmd.par0);
 		cmd.cmd_ack = z_mfc_set(2, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 	case CMD_SET_GAS_4: {
-		uint16_t p = clamp16(cmd.parameter);
+		uint16_t p = clamp16(cmd.par0);
 		cmd.cmd_ack = z_mfc_set(3, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
@@ -118,28 +122,28 @@ void z_cmd_sero(stack_item cmd) {
 		uint16_t v;
 		cmd.cmd_ack = z_mfc_get(0, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		if (cmd.cmd_ack == CMR_SUCCESSFULL)
-			cmd.parameter = v;
+			cmd.par0 = v;
 		break;
 	}
 	case CMD_GET_GAS_AIR: {
 		uint16_t v;
 		cmd.cmd_ack = z_mfc_get(1, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		if (cmd.cmd_ack == CMR_SUCCESSFULL)
-			cmd.parameter = v;
+			cmd.par0 = v;
 		break;
 	}
 	case CMD_GET_GAS_O2: {
 		uint16_t v;
 		cmd.cmd_ack = z_mfc_get(2, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		if (cmd.cmd_ack == CMR_SUCCESSFULL)
-			cmd.parameter = v;
+			cmd.par0 = v;
 		break;
 	}
 	case CMD_GET_GAS_4: {
 		uint16_t v;
 		cmd.cmd_ack = z_mfc_get(3, &v) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		if (cmd.cmd_ack == CMR_SUCCESSFULL)
-			cmd.parameter = v;
+			cmd.par0 = v;
 		break;
 	}
 
@@ -163,7 +167,7 @@ void z_cmd_sero(stack_item cmd) {
 
 		// Valves OPEN-CLOSE-READ
 	case CMD_V3_SET: {
-		uint16_t p = cmd.parameter;
+		uint16_t p = cmd.par0;
 		uint8_t ret;
 		if (p) {
 			ret = z_valve_open(3);
@@ -177,7 +181,7 @@ void z_cmd_sero(stack_item cmd) {
 	case CMD_V3_GET: {
 		uint16_t st;
 		if (z_valve_get(3, &st)) {
-			cmd.parameter = st;
+			cmd.par0 = st;
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -186,7 +190,7 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_V4_SET: {
-		uint16_t p = cmd.parameter;
+		uint16_t p = cmd.par0;
 		uint8_t ret;
 		if (p) {
 			ret = z_valve_open(4);
@@ -200,7 +204,7 @@ void z_cmd_sero(stack_item cmd) {
 	case CMD_V4_GET: {
 		uint16_t st;
 		if (z_valve_get(4, &st)) {
-			cmd.parameter = st;
+			cmd.par0 = st;
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -211,7 +215,7 @@ void z_cmd_sero(stack_item cmd) {
 	// -----------
 
 	case CMD_PUMP_SET: {
-		uint16_t p = cmd.parameter;
+		uint16_t p = cmd.par0;
 		if (p) {
 			setStartPump();
 		} else {
@@ -231,21 +235,21 @@ void z_cmd_sero(stack_item cmd) {
 
 	case CMD_PUMP_GET_WAR: {             // "PUM:WAR?"
 		uint8_t v = readPumpWarning();         // collective warning bit
-		cmd.parameter = v;
+		cmd.par0 = v;
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_PUMP_GET_ALA: {
 		uint8_t v = readPumpAlarm();
-		cmd.parameter = v;
+		cmd.par0 = v;
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_PUMP_GET_RMT: {
 		uint8_t v = readPumpRemote();
-		cmd.parameter = v;
+		cmd.par0 = v;
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
@@ -253,7 +257,7 @@ void z_cmd_sero(stack_item cmd) {
 	// -----------
 
 	case CMD_SET_T: {// assume temperature values are 10 times the wanted values. so 120 means 12.0 C here to be able to use floats
-		float v = cmd.parameter / 10.0f;
+		float v = cmd.par0 / 10.0f;
 		set_TC_STP(v);
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
@@ -261,7 +265,7 @@ void z_cmd_sero(stack_item cmd) {
 
 	case CMD_GET_T: {
 		float v = get_TIST();
-		cmd.parameter = (uint32_t) v * 10;
+		cmd.par0 = (uint32_t) v * 10;
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
@@ -269,14 +273,14 @@ void z_cmd_sero(stack_item cmd) {
 	// -----------
 
 	case CMD_APC_CTL: {
-		cmd.cmd_ack = apc_set_acc_mode(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_acc_mode(cmd.par0) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_AMD_RD: {
 		uint32_t v;                                      // local storage
 		if (apc_get_ctl_mode(&v)) {
-			cmd.parameter = (int32_t) v;                   // always an int here
+			cmd.par0 = (int32_t) v;                   // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -285,13 +289,13 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_AMD: {
-		cmd.cmd_ack = apc_set_ctl_mode(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_ctl_mode(cmd.par0) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 	case CMD_APC_CTL_SEL_RD: {
 		uint32_t v;
 		if (apc_get_ctlr_selector(&v)) {
-			cmd.parameter = (int32_t) v;   // safe cast if range fits
+			cmd.par0 = (int32_t) v;   // safe cast if range fits
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -300,7 +304,7 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_CTL_SEL: {
-		cmd.cmd_ack = apc_set_ctlr_selector(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_ctlr_selector(cmd.par0) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		;
 		break;
 	}
@@ -313,7 +317,7 @@ void z_cmd_sero(stack_item cmd) {
 	}
 	case CMD_APC_VAL: {
 		// 1 -> on, 0 -> off
-		uint8_t ok = cmd.parameter ? apc_cmd_open() : apc_cmd_close();
+		uint8_t ok = cmd.par0 ? apc_cmd_open() : apc_cmd_close();
 		cmd.cmd_ack = ok ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
@@ -322,7 +326,7 @@ void z_cmd_sero(stack_item cmd) {
 	case CMD_APC_VAL_RD: {
 		uint32_t v;                                      // local storage
 		if (apc_get_valve_state(&v)) {
-			cmd.parameter = (int32_t) v;                   // always an int here
+			cmd.par0 = (int32_t) v;                   // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -331,14 +335,14 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_POS: {
-		cmd.cmd_ack = apc_set_pos(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pos(cmd.par0) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_POS_RD: {
-		uint32_t v;                                      // local storage
+		double v;                                      // local storage
 		if (apc_get_pos(&v)) {
-			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.par0 = (int32_t) v*10;                           // always an int here so, multiply it with 10 to get 1 decimal point
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -347,14 +351,14 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_POS_SPD: {
-		cmd.cmd_ack = apc_set_pos_ctl_spd(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pos_ctl_spd(cmd.par0) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_POS_SPD_RD: {
 		uint32_t v;                                      // local storage
 		if (apc_get_pos_ctl_spd(&v)) {
-			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.par0 = (int32_t) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -363,14 +367,14 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_POS_RAM: { // here we might need to call both ramps
-		cmd.cmd_ack = apc_set_pos_ramp_en(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pos_ramp_en(cmd.par0) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_POS_RAM_RD: {
 		uint32_t v;                                      // local storage
 		if (apc_get_pos_ramp_en(&v)) {
-			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.par0 = (int32_t) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -378,14 +382,14 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 	case CMD_APC_POS_TI: {
-		cmd.cmd_ack = apc_set_pos_ramp_time(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pos_ramp_time(cmd.par0) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_POS_TI_RD: {
 		uint32_t v;                                      // local storage
 		if (apc_get_pos_ramp_time(&v)) {
-			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.par0 = (int32_t) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -393,14 +397,14 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 	case CMD_APC_POS_SLP: {
-		cmd.cmd_ack = apc_set_pos_ramp_slope(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pos_ramp_slope(cmd.par0) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_POS_SLP_RD: {
 		uint32_t v;                                      // local storage
 		if (apc_get_pos_ramp_slope(&v)) {
-			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.par0 = (int32_t) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -408,14 +412,14 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 	case CMD_APC_POS_MD: {
-		cmd.cmd_ack = apc_set_pos_ramp_mode(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pos_ramp_mode(cmd.par0) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_POS_MD_RD: {
 		uint32_t v;                                      // local storage
 		if (apc_get_pos_ramp_mode(&v)) {
-			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.par0 = (int32_t) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -424,14 +428,14 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_PRE: {
-		cmd.cmd_ack = apc_set_pre(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pre(cmd.par0) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_PRE_RD: {
 		uint32_t v;                                      // local storage
 		if (apc_get_pre(&v)) {
-			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.par0 = (int32_t) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -439,14 +443,14 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 	case CMD_APC_PRE_SPD: {
-		cmd.cmd_ack = apc_set_pre_speed(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pre_speed(cmd.par0) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_PRE_SPD_RD: {
 		uint32_t v;                                      // local storage
 		if (apc_get_pre_speed(&v)) {
-			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.par0 = (int32_t) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -454,14 +458,14 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 	case CMD_APC_PRE_UNT: {
-		cmd.cmd_ack = apc_set_pre_unit(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pre_unit(cmd.par0) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_PRE_UNT_RD: {
 		uint32_t v;                                      // local storage
 		if (apc_get_pre_unit(&v)) {
-			cmd.parameter = (int32_t) v;                           // always an int here
+			cmd.par0 = (int32_t) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -476,85 +480,85 @@ void z_cmd_sero(stack_item cmd) {
 // -----------
 
 	case CMD_ISO_V1: {
-		iso_valve_set(cmd.parameter);
+		iso_valve_set(cmd.par0);
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_ISO_V1_RD: {
-		cmd.parameter = iso_valve_get();
+		cmd.par0 = iso_valve_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_REL: {
-		relais_set(cmd.parameter);
+		relais_set(cmd.par0);
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_REL_RD: {
-		cmd.parameter = relais_get();
+		cmd.par0 = relais_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_BUZ: {
-		buzzer_set(cmd.parameter);
+		buzzer_set(cmd.par0);
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_BUZ_RD: {
-		cmd.parameter = buzzer_get();
+		cmd.par0 = buzzer_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_SYS_LED: {
-		ledbereit_set(cmd.parameter);
+		ledbereit_set(cmd.par0);
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_SYS_LED_RD: {
-		cmd.parameter = ledbereit_get();
+		cmd.par0 = ledbereit_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_PUM_LED: {
-		ledpumpe_set(cmd.parameter);
+		ledpumpe_set(cmd.par0);
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_PUM_LED_RD: {
-		cmd.parameter = ledpumpe_get();
+		cmd.par0 = ledpumpe_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_ATM_RD: {
-		cmd.parameter = atm_sensor_get();
+		cmd.par0 = atm_sensor_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_DOOR_SWM_RD: {
-		cmd.parameter = door_switch_get();
+		cmd.par0 = door_switch_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_AIR_RD: {
-		cmd.parameter = air_sensor_get();
+		cmd.par0 = air_sensor_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 
 	case CMD_STP_RD: {
-		cmd.parameter = stop_button_get();
+		cmd.par0 = stop_button_get();
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
@@ -566,7 +570,7 @@ void z_cmd_sero(stack_item cmd) {
 		uint16_t e;
 		cmd.cmd_ack = z_gb_err_get(&e);
 		if (cmd.cmd_ack == CMR_SUCCESSFULL)
-			cmd.parameter = e;
+			cmd.par0 = e;
 		break;
 	}
 	case CMD_RESET_ERR_GB: {

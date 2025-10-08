@@ -166,4 +166,37 @@ uint8_t uartRB_Getc(UartRB *p) {
 	return c;
 }
 
+// ---------- tiny UART helpers (RB-safe) ----------
+void uart_put_chunked(UartRB *rb, const char *buf, size_t len) {
+    // uartRB_Put requires the whole chunk; split if needed
+    while (len) {
+        // send up to BUFLEN-1 bytes per chunk to be safe
+        size_t n = len > (BUFLEN - 1) ? (BUFLEN - 1) : len;
+        if (!uartRB_Put(rb, buf, (uint8_t)n)) {
+            // if RB is full, you can spin or yield briefly
+            // (adjust to your scheduler; worst case: busy-wait)
+            continue;
+        }
+        uartRB_KickTx(rb);
+        buf += n; len -= n;
+    }
+}
+
+void uart_puts_rb(UartRB *rb, const char *s) {
+    uart_put_chunked(rb, s, strlen(s));
+}
+
+void uart_puti_rb(UartRB *rb, long v) {
+    char tmp[24];
+    int n = snprintf(tmp, sizeof tmp, "%ld", v);
+    if (n > 0) uart_put_chunked(rb, tmp, (size_t)n);
+}
+
+void uart_putf_rb(UartRB *rb, double v) {
+    // print compact; change to "%.3f" if you want fixed precision
+    char tmp[48];
+    int n = snprintf(tmp, sizeof tmp, "%.6g", v);
+    if (n > 0) uart_put_chunked(rb, tmp, (size_t)n);
+}
+
 

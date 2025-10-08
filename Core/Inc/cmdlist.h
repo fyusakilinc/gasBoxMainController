@@ -159,4 +159,9 @@ enum GB_CMDList{
 	GB_CMD_CLOSE_MFC4 = 0x15,
 };
 
+//die max.Größe der ASCII-Tabelle
+#define ASCII_CMD_MAX			180
+#define BINARY_INDEX_MAX		256
+#define CMD_LENGTH				30
+
 #endif /* CMDLIST_H_ */

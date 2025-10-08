@@ -1,10 +1,6 @@
 //#include <stdio.h>
 //#include <string.h>
 
-#ifndef _STDINT_H
-#include <stdint.h>
-#endif
-
 #include "SG_global.h"
 #include "prioritylist.h"
 #include "priority_pushpop.h"

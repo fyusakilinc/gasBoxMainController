@@ -29,11 +29,6 @@
 #define get_val 3
 #define proc_cmd 4
 
-//die max.Größe der ASCII-Tabelle
-#define ASCII_CMD_MAX			29
-#define BINARY_INDEX_MAX		256
-#define CMD_LENGTH				19
-
 
 //Definition der Einstellungsparameter für die Kommunikation mit ASCII-PROTOKOLL
 volatile static uint8_t verbose=0;

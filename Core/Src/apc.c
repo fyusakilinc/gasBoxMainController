@@ -135,7 +135,7 @@ static int apc_readline(char *dst, int maxlen) {
 			if (len < (maxlen - 1))
 				dst[len++] = (char) c;
 		}
-		HAL_Delay(1);
+		//HAL_Delay(1);
 	}
 	if (len) {
 		dst[len] = 0;
@@ -160,6 +160,42 @@ static int apc_p_get(uint32_t param, char *dst, int maxlen){
     if(n<=0 || !apc_puts(cmd,(uint8_t)n)) return 0;
     return apc_readline(dst, maxlen) >= 0;
 }
+
+// returns 1 on success, 0 on failure; fills out fields and points *val_str to start of value
+static int apc_parse_p_header(const char *line, unsigned *err, unsigned *func,
+		unsigned *pid, unsigned *index, const char **val_str) {
+	int pos_after_hdr = 0;
+	// p: EE FF PPPPPPPP II <value...>
+	if (sscanf(line, "p:%2x%2x%8x%2x%n", err, func, pid, index, &pos_after_hdr)
+			!= 4)
+		return 0;
+	*val_str = line + pos_after_hdr;
+	return 1;
+}
+
+static int apc_parse_p_value_double(const char *line,
+                                       uint32_t expect_param,
+                                       double *out)
+{
+    unsigned err=0, func=0, pid=0, idx=0;
+    const char *vstr = NULL;
+
+    if (!apc_parse_p_header(line, &err, &func, &pid, &idx, &vstr)) return 0;
+    if (err != 0) return 0;                 // device reported an error
+    if (func != 0x0B) return 0;             // expect GET echo
+    if (pid  != expect_param) return 0;     // sanity check: same param
+    if (idx  != 0x00) return 0;             // if you only use index 0
+
+    if (*vstr == '\0') return 0;            // missing value
+
+    char *endp = NULL;
+    double val = strtod(vstr, &endp);       // supports 23.1, -5.2, 1.23e-3, etc.
+    if (endp == vstr) return 0;             // no digits parsed
+
+    *out = val;
+    return 1;
+}
+
 
 //  ----- commands -----
 
@@ -205,13 +241,13 @@ uint8_t apc_get_valve_state(uint32_t *out) {
 uint8_t apc_set_pos(uint32_t v) {
 	return apc_p_set_u32(P_ID_TARGET_POS, v) ? 1 : 0;
 }
-uint8_t apc_get_pos(uint32_t *out) {
+uint8_t apc_get_pos(double *out) {
 	char line[64];
 	if (!apc_p_get(P_ID_ACT_POS, line, sizeof(line)))
 		return 0;
-	*out = (uint32_t) strtoul(strrchr(line, ' ') + 1, NULL, 10);
-	return 1;
+	return apc_parse_p_value_double(line, P_ID_ACT_POS, out) ? 1 : 0;
 }
+
 
 uint8_t apc_set_pos_ctl_spd(uint32_t v) {
 	return apc_p_set_u32(P_ID_POS_SPEED, v) ? 1 : 0;

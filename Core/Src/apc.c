@@ -209,12 +209,11 @@ uint8_t apc_set_ctl_mode(uint32_t v) {
 	return apc_p_set_u32(P_ID_CONTROL_MODE, v) ? 1 : 0;
 }
 
-uint8_t apc_get_ctl_mode(uint32_t *out) {
+uint8_t apc_get_ctl_mode(double *out) {
 	char line[64];
 	if (!apc_p_get(P_ID_CONTROL_MODE, line, sizeof(line)))
 		return 0;
-	*out = (uint32_t) strtoul(strrchr(line, ' ') + 1, NULL, 10);
-	return 1;
+	return apc_parse_p_value_double(line, P_ID_CONTROL_MODE, out) ? 1 : 0;
 }
 
 uint8_t apc_cmd_open(void)  {
@@ -228,7 +227,7 @@ uint8_t apc_cmd_close(void) {
 
 //  ----- VALVE -----
 
-uint8_t apc_get_valve_state(uint32_t *out) {
+uint8_t apc_get_valve_state(double *out) {
 	char line[64];
 	if (!apc_p_get(P_ID_VALVE_POS_STATE, line, sizeof(line)))
 		return 0;
@@ -253,57 +252,52 @@ uint8_t apc_set_pos_ctl_spd(uint32_t v) {
 	return apc_p_set_u32(P_ID_POS_SPEED, v) ? 1 : 0;
 }
 
-uint8_t apc_get_pos_ctl_spd(uint32_t *out) {
+uint8_t apc_get_pos_ctl_spd(double *out) {
 	char line[64];
 	if (!apc_p_get(P_ID_POS_SPEED, line, sizeof(line)))
 		return 0;
-	*out = (uint32_t) strtoul(strrchr(line, ' ') + 1, NULL, 10);
-	return 1;
+	return apc_parse_p_value_double(line, P_ID_POS_SPEED, out) ? 1 : 0;
 }
 
 uint8_t apc_set_pos_ramp_en(uint32_t en) {
 	return apc_p_set_u32(P_ID_RAMP_ENABLE_POS, !!en) ? 1 : 0;
 }
 
-uint8_t apc_get_pos_ramp_en(uint32_t *out) {
+uint8_t apc_get_pos_ramp_en(double *out) {
 	char line[64];
 	if (!apc_p_get(P_ID_RAMP_ENABLE_POS, line, sizeof(line)))
 		return 0;
-	*out = (uint32_t) strtoul(strrchr(line, ' ') + 1, NULL, 10);
-	return 1;
+	return apc_parse_p_value_double(line, P_ID_RAMP_ENABLE_POS, out) ? 1 : 0;
 }
 
 uint8_t apc_set_pos_ramp_time(uint32_t v) {
 	return apc_p_set_u32(P_ID_RAMP_TIME_POS, v) ? 1 : 0;
 } // units per CPA
-uint8_t apc_get_pos_ramp_time(uint32_t *out) {
+uint8_t apc_get_pos_ramp_time(double *out) {
 	char line[64];
 	if (!apc_p_get(P_ID_RAMP_TIME_POS, line, sizeof(line)))
 		return 0;
-	*out = (uint32_t) strtoul(strrchr(line, ' ') + 1, NULL, 10);
-	return 1;
+	return apc_parse_p_value_double(line, P_ID_RAMP_TIME_POS, out) ? 1 : 0;
 }
 // RAM:SLP / RAM:SLP?
 uint8_t apc_set_pos_ramp_slope(uint32_t v) {
 	return apc_p_set_u32(P_ID_RAMP_SLOPE_POS, v) ? 1 : 0;
 }
-uint8_t apc_get_pos_ramp_slope(uint32_t *out) {
+uint8_t apc_get_pos_ramp_slope(double *out) {
 	char line[64];
 	if (!apc_p_get(P_ID_RAMP_SLOPE_POS, line, sizeof(line)))
 		return 0;
-	*out = (uint32_t) strtoul(strrchr(line, ' ') + 1, NULL, 10);
-	return 1;
+	return apc_parse_p_value_double(line, P_ID_RAMP_SLOPE_POS, out) ? 1 : 0;
 }
 
 uint8_t apc_set_pos_ramp_mode(uint32_t v) {
 	return apc_p_set_u32(P_ID_RAMP_MODE_POS, v) ? 1 : 0;
 }
-uint8_t apc_get_pos_ramp_mode(uint32_t *out) {
+uint8_t apc_get_pos_ramp_mode(double *out) {
 	char line[64];
 	if (!apc_p_get(P_ID_RAMP_MODE_POS, line, sizeof(line)))
 		return 0;
-	*out = (uint32_t) strtoul(strrchr(line, ' ') + 1, NULL, 10);
-	return 1;
+	return apc_parse_p_value_double(line, P_ID_RAMP_MODE_POS, out) ? 1 : 0;
 }
 
 
@@ -312,44 +306,40 @@ uint8_t apc_get_pos_ramp_mode(uint32_t *out) {
 uint8_t apc_set_pre(uint32_t v) {
 	return apc_p_set_u32(P_ID_TARGET_PRE, v) ? 1 : 0;
 }
-uint8_t apc_get_pre(uint32_t *out) {
+uint8_t apc_get_pre(double *out) {
 	char line[64];
 	if (!apc_p_get(P_ID_ACT_PRE, line, sizeof(line)))
 		return 0;
-	*out = (uint32_t) strtoul(strrchr(line, ' ') + 1, NULL, 10);
-	return 1;
+	return apc_parse_p_value_double(line, P_ID_ACT_PRE, out) ? 1 : 0;
 }
 
 uint8_t apc_set_pre_speed(uint32_t v) {
 	return apc_p_set_u32(P_ID_PRE_SPEED, v) ? 1 : 0;
 }
-uint8_t apc_get_pre_speed(uint32_t *out) {
+uint8_t apc_get_pre_speed(double *out) {
 	char line[64];
 	if (!apc_p_get(P_ID_PRE_SPEED, line, sizeof(line)))
 		return 0;
-	*out = (uint32_t) strtoul(strrchr(line, ' ') + 1, NULL, 10);
-	return 1;
+	return apc_parse_p_value_double(line, P_ID_PRE_SPEED, out) ? 1 : 0;
 }
 
 uint8_t apc_set_pre_unit(uint32_t v) {
 	return apc_p_set_u32(P_ID_PRESS_UNIT, v) ? 1 : 0;
 }
-uint8_t apc_get_pre_unit(uint32_t *out) {
+uint8_t apc_get_pre_unit(double *out) {
 	char line[64];
 	if (!apc_p_get(P_ID_PRESS_UNIT, line, sizeof(line)))
 		return 0;
-	*out = (uint32_t) strtoul(strrchr(line, ' ') + 1, NULL, 10);
-	return 1;
+	return apc_parse_p_value_double(line, P_ID_PRESS_UNIT, out) ? 1 : 0;
 }
 
 // APC:CTL:SEL / APC:CTL:SEL?
 uint8_t apc_set_ctlr_selector(uint32_t v){    // v scaled per scheme
     return apc_p_set_u32(P_ID_CTLR_SELECTOR, v) ? 1 : 0;
 }
-uint8_t apc_get_ctlr_selector(uint32_t *out) {
+uint8_t apc_get_ctlr_selector(double *out) {
 	char line[64];
 	if (!apc_p_get(P_ID_CTLR_SELECTOR, line, sizeof(line)))
 		return 0;
-	*out = (uint32_t) strtoul(strrchr(line, ' ') + 1, NULL, 10);
-	return 1;
+	return apc_parse_p_value_double(line, P_ID_CTLR_SELECTOR, out) ? 1 : 0;
 }

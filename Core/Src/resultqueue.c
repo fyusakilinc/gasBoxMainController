@@ -109,13 +109,13 @@ void result_get_sero(void)
 				uartRB_KickTx(rb);
 				uart_puts_rb(rb," ");
 				output_ascii_fl(cmd_tmp.par0);
-				uart_puts_rb(rb," ");
-				output_ascii_fl(cmd_tmp.par1);
-				uart_puts_rb(rb," ");
-				output_ascii_fl(cmd_tmp.par2);
-				uart_puts_rb(rb," ");
-				output_ascii_fl(cmd_tmp.par3);
-				uart_puts_rb(rb," ");
+				//uart_puts_rb(rb," ");
+				//output_ascii_fl(cmd_tmp.par1);
+				//uart_puts_rb(rb," ");
+				//output_ascii_fl(cmd_tmp.par2);
+				//uart_puts_rb(rb," ");
+				//output_ascii_fl(cmd_tmp.par3);
+				//uart_puts_rb(rb," ");
 				if (strlen(cmd_tmp.str) > 0) {
 					uart_puts_rb(rb,cmd_tmp.str);
 				}

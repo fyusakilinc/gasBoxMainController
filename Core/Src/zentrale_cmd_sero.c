@@ -257,7 +257,7 @@ void z_cmd_sero(stack_item cmd) {
 	// -----------
 
 	case CMD_SET_T: {// assume temperature values are 10 times the wanted values. so 120 means 12.0 C here to be able to use floats
-		float v = cmd.par0 / 10.0f;
+		float v = cmd.par0;
 		set_TC_STP(v);
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
@@ -265,7 +265,7 @@ void z_cmd_sero(stack_item cmd) {
 
 	case CMD_GET_T: {
 		float v = get_TIST();
-		cmd.par0 = (uint32_t) v * 10;
+		cmd.par0 = (float) v;
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
@@ -278,9 +278,9 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_AMD_RD: {
-		uint32_t v;                                      // local storage
+		double v;                                      // local storage
 		if (apc_get_ctl_mode(&v)) {
-			cmd.par0 = (int32_t) v;                   // always an int here
+			cmd.par0 = (float) v;                   // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -293,9 +293,9 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 	case CMD_APC_CTL_SEL_RD: {
-		uint32_t v;
+		double v;
 		if (apc_get_ctlr_selector(&v)) {
-			cmd.par0 = (int32_t) v;   // safe cast if range fits
+			cmd.par0 = (float) v;   // safe cast if range fits
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -324,9 +324,9 @@ void z_cmd_sero(stack_item cmd) {
 
 
 	case CMD_APC_VAL_RD: {
-		uint32_t v;                                      // local storage
+		double v;                                      // local storage
 		if (apc_get_valve_state(&v)) {
-			cmd.par0 = (int32_t) v;                   // always an int here
+			cmd.par0 = (float) v;                   // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -342,7 +342,7 @@ void z_cmd_sero(stack_item cmd) {
 	case CMD_APC_POS_RD: {
 		double v;                                      // local storage
 		if (apc_get_pos(&v)) {
-			cmd.par0 = (int32_t) v*10;                           // always an int here so, multiply it with 10 to get 1 decimal point
+			cmd.par0 = (float) v*10;                           // always an int here so, multiply it with 10 to get 1 decimal point
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -356,9 +356,9 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_POS_SPD_RD: {
-		uint32_t v;                                      // local storage
+		double v;                                      // local storage
 		if (apc_get_pos_ctl_spd(&v)) {
-			cmd.par0 = (int32_t) v;                           // always an int here
+			cmd.par0 = (float) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -372,9 +372,9 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_POS_RAM_RD: {
-		uint32_t v;                                      // local storage
+		double v;                                      // local storage
 		if (apc_get_pos_ramp_en(&v)) {
-			cmd.par0 = (int32_t) v;                           // always an int here
+			cmd.par0 = (float) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -387,9 +387,9 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_POS_TI_RD: {
-		uint32_t v;                                      // local storage
+		double v;                                      // local storage
 		if (apc_get_pos_ramp_time(&v)) {
-			cmd.par0 = (int32_t) v;                           // always an int here
+			cmd.par0 = (float) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -402,9 +402,9 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_POS_SLP_RD: {
-		uint32_t v;                                      // local storage
+		double v;                                      // local storage
 		if (apc_get_pos_ramp_slope(&v)) {
-			cmd.par0 = (int32_t) v;                           // always an int here
+			cmd.par0 = (float) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -417,9 +417,9 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_POS_MD_RD: {
-		uint32_t v;                                      // local storage
+		double v;                                      // local storage
 		if (apc_get_pos_ramp_mode(&v)) {
-			cmd.par0 = (int32_t) v;                           // always an int here
+			cmd.par0 = (float) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -433,9 +433,9 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_PRE_RD: {
-		uint32_t v;                                      // local storage
+		double v;                                      // local storage
 		if (apc_get_pre(&v)) {
-			cmd.par0 = (int32_t) v;                           // always an int here
+			cmd.par0 = (float) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -448,9 +448,9 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_PRE_SPD_RD: {
-		uint32_t v;                                      // local storage
+		double v;                                      // local storage
 		if (apc_get_pre_speed(&v)) {
-			cmd.par0 = (int32_t) v;                           // always an int here
+			cmd.par0 = (float) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -463,9 +463,9 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_PRE_UNT_RD: {
-		uint32_t v;                                      // local storage
+		double v;                                      // local storage
 		if (apc_get_pre_unit(&v)) {
-			cmd.par0 = (int32_t) v;                           // always an int here
+			cmd.par0 = (float) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;

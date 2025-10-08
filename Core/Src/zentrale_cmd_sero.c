@@ -269,29 +269,28 @@ void z_cmd_sero(stack_item cmd) {
 	// -----------
 
 	case CMD_APC_CTL: {
-		if (cmd.parameter > 1) {
-			cmd.cmd_ack = CMR_COMMANDDENIED;
-			break;
-		}
-		// 1 -> remote, 0 -> local
-		uint8_t ok = cmd.parameter ? apc_cmd_remote() : apc_cmd_local();
-		cmd.cmd_ack = ok ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_acc_mode(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_AMD_RD: {
+		uint32_t v;                                      // local storage
+		if (apc_get_ctl_mode(&v)) {
+			cmd.parameter = (int32_t) v;                   // always an int here
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
 		break;
 	}
 
 	case CMD_APC_AMD: {
-		cmd.cmd_ack =
-				apc_set_pp_ctl(cmd.parameter) ?
-						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_ctl_mode(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 	case CMD_APC_CTL_SEL_RD: {
 		uint32_t v;
-		if (apc_ctlr_selector_get(&v)) {
+		if (apc_get_ctlr_selector(&v)) {
 			cmd.parameter = (int32_t) v;   // safe cast if range fits
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
@@ -301,9 +300,7 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_CTL_SEL: {
-		cmd.cmd_ack =
-				apc_ctlr_selector_set(cmd.parameter) ?
-						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_ctlr_selector(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		;
 		break;
 	}
@@ -321,14 +318,20 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 
+
 	case CMD_APC_VAL_RD: {
+		uint32_t v;                                      // local storage
+		if (apc_get_valve_state(&v)) {
+			cmd.parameter = (int32_t) v;                   // always an int here
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
 		break;
 	}
 
 	case CMD_APC_POS: {
-		cmd.cmd_ack =
-				apc_set_pos(cmd.parameter) ?
-						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pos(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
@@ -344,15 +347,13 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_POS_SPD: {
-		cmd.cmd_ack =
-				apc_posspd_set(cmd.parameter) ?
-						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pos_ctl_spd(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_POS_SPD_RD: {
 		uint32_t v;                                      // local storage
-		if (apc_posspd_get(&v)) {
+		if (apc_get_pos_ctl_spd(&v)) {
 			cmd.parameter = (int32_t) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
@@ -362,15 +363,13 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_POS_RAM: { // here we might need to call both ramps
-		cmd.cmd_ack =
-				apc_ram_set_pre(cmd.parameter) ?
-						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pos_ramp_en(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_POS_RAM_RD: {
 		uint32_t v;                                      // local storage
-		if (apc_ram_get_pre(&v)) {
+		if (apc_get_pos_ramp_en(&v)) {
 			cmd.parameter = (int32_t) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
@@ -379,15 +378,13 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 	case CMD_APC_POS_TI: {
-		cmd.cmd_ack =
-				apc_ramti_set_pre(cmd.parameter) ?
-						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pos_ramp_time(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_POS_TI_RD: {
 		uint32_t v;                                      // local storage
-		if (apc_ramti_get_pre(&v)) {
+		if (apc_get_pos_ramp_time(&v)) {
 			cmd.parameter = (int32_t) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
@@ -396,15 +393,13 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 	case CMD_APC_POS_SLP: {
-		cmd.cmd_ack =
-				apc_ramslp_set_pre(cmd.parameter) ?
-						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pos_ramp_slope(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_POS_SLP_RD: {
 		uint32_t v;                                      // local storage
-		if (apc_ramslp_get_pre(&v)) {
+		if (apc_get_pos_ramp_slope(&v)) {
 			cmd.parameter = (int32_t) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
@@ -413,15 +408,13 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 	case CMD_APC_POS_MD: {
-		cmd.cmd_ack = apc_rammd_set_pre(cmd.parameter) ?
-		CMR_SUCCESSFULL :
-															CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pos_ramp_mode(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_POS_MD_RD: {
 		uint32_t v;                                      // local storage
-		if (apc_rammd_get_pre(&v)) {
+		if (apc_get_pos_ramp_mode(&v)) {
 			cmd.parameter = (int32_t) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
@@ -431,15 +424,13 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 	case CMD_APC_PRE: {
-		cmd.cmd_ack =
-				apc_set_pres(cmd.parameter) ?
-						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pre(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_PRE_RD: {
 		uint32_t v;                                      // local storage
-		if (apc_get_pres(&v)) {
+		if (apc_get_pre(&v)) {
 			cmd.parameter = (int32_t) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
@@ -448,15 +439,13 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 	case CMD_APC_PRE_SPD: {
-		cmd.cmd_ack =
-				apc_prespd_set(cmd.parameter) ?
-						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pre_speed(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_PRE_SPD_RD: {
 		uint32_t v;                                      // local storage
-		if (apc_prespd_get(&v)) {
+		if (apc_get_pre_speed(&v)) {
 			cmd.parameter = (int32_t) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
@@ -465,15 +454,13 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 	case CMD_APC_PRE_UNT: {
-		cmd.cmd_ack = apc_preunt_set(cmd.parameter) ?
-		CMR_SUCCESSFULL :
-														CMR_COMMANDDENIED;
+		cmd.cmd_ack = apc_set_pre_unit(cmd.parameter) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 
 	case CMD_APC_PRE_UNT_RD: {
 		uint32_t v;                                      // local storage
-		if (apc_preunt_get(&v)) {
+		if (apc_get_pre_unit(&v)) {
 			cmd.parameter = (int32_t) v;                           // always an int here
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {

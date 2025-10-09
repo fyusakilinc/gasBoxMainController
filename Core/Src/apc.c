@@ -235,7 +235,7 @@ static int apc_parse_p_value_u16(const char *line, uint32_t expect_param,
 	errno = 0;
 	char *endp = NULL;
 	unsigned long u = strtoul(vstr, &endp, 10);
-	if (endp == vstr || errno == ERANGE || u > UINT32_MAX)
+	if (endp == vstr || errno == ERANGE || u > UINT16_MAX)
 		return 0;
 	*out = (uint16_t) u;
 	return 1;
@@ -256,9 +256,13 @@ uint8_t apc_set_ctl_mode(double v) {
 
 uint8_t apc_get_ctl_mode(double *out) {
 	char line[64];
+	uint16_t u = 0;
 	if (!apc_p_get(P_ID_CONTROL_MODE, line, sizeof(line)))
 		return 0;
-	return apc_parse_p_value_double(line, P_ID_CONTROL_MODE, out) ? 1 : 0;
+	if (!apc_parse_p_value_u16(line, P_ID_CONTROL_MODE, &u))
+		return 0;
+	*out = (double) u;
+	return 1;
 }
 
 uint8_t apc_cmd_open(void)  {
@@ -296,9 +300,13 @@ uint8_t apc_get_err_code(double *out) {
 
 uint8_t apc_get_valve_state(double *out) {
 	char line[64];
-	if (!apc_p_get(P_ID_VALVE_POS_STATE, line, sizeof(line)))
+	uint16_t u = 0;
+	if (!apc_p_get(P_ID_VALVE_POS_STATE, line, sizeof line))
 		return 0;
-	return apc_parse_p_value_double(line, P_ID_VALVE_POS_STATE, out) ? 1 : 0;
+	if (!apc_parse_p_value_u16(line, P_ID_VALVE_POS_STATE, &u))
+		return 0;
+	*out = (double) u;
+	return 1;
 }
 
 //  ----- POSITION CONTROL -----

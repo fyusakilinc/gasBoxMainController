@@ -184,6 +184,13 @@ void set_ct_zreset(uint16_t ct_cmdval)
 }
 
 
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  if (htim->Instance == TIM1) {
+	  timer0_incTick();
+  }
+}
+
 
 
 

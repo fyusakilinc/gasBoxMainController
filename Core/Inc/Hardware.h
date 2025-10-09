@@ -17,4 +17,4 @@ void setStopPump(void);
 uint8_t readPumpWarning(void);
 uint8_t readPumpAlarm(void);
 uint8_t readPumpRemote(void);
-
+void hw_xport_reset_disable(uint8_t);

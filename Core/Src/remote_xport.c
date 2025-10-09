@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "remote.h"
+#include "remote_xport.h"
 #include "uart4.h"
 #include "usart.h"
 #include "protocoll.h"
@@ -38,7 +38,7 @@ static volatile uint8_t msg[CMD_LENGTH_MAX  + 1];
 static volatile uint8_t nzeichen = 0;       // bytes buffered from UART ring
 
 // forward
-void parse_ascii(void);
+void parse_ascii_xport(void);
 
 // passthrough to RFG
 //#define RFG_PASSTHRU
@@ -63,24 +63,24 @@ static inline void ap_reset_state(char *cmd, uint8_t *cmd_len,
 }
 
 // ---- public API ----
-void remote_init(void) {
+void remote_xport_init(void) {
 	nzeichen = 0;
 	memset((void*) msg, 0, sizeof(msg));
 
 }
 
 // Pull bytes from UART4 RX ring into msg[] and feed parser
-void remote_sero_get(void) {
+void remote_xport_sero_get(void) {
 	nzeichen = 0;
-	while ((rb_rx_used(&usart2_rb) > 0) && (nzeichen < CMD_LENGTH_MAX)) {
-		msg[nzeichen++] = (uint8_t) uartRB_Getc(&usart2_rb);   // legacy getc()
+	while ((rb_rx_used(&usart3_rb) > 0) && (nzeichen < CMD_LENGTH_MAX)) {
+		msg[nzeichen++] = (uint8_t) uartRB_Getc(&usart3_rb);   // legacy getc()
 	}
 	if (nzeichen)
-		parse_ascii();
+		parse_ascii_xport();
 }
 
 // das Paket in ASCII-Format analysieren und das Paket in den Stack einfügen.
-void parse_ascii(void) {
+void parse_ascii_xport(void) {
 
 	static char cmd[CMD_LENGTH_MAX+1] ="\0";
 	static uint8_t cmd_len = 0;
@@ -199,7 +199,7 @@ void parse_ascii(void) {
 			// 2) build stack item (READ if no value, WRITE if value present & valid)
 			stack_item si = { 0 };
 			si.cmd_index = cmd_id;
-			si.cmd_sender = Q_RS232;
+			si.cmd_sender = Q_XPORT;
 			si.prio = PRIO_LEVEL1;
 			si.rwflg = (pflag && !eflag) ? WRITE : READ;
 
@@ -246,25 +246,25 @@ void parse_ascii(void) {
 	} while (ptr < nzeichen);
 }
 
-void output_ascii_ui(uint32_t val) {
+void output_ascii_ui_xport(uint32_t val) {
 	char tmp[34];
 	sprintf(tmp, "%-lu", val);
-	uartRB_Put(&usart2_rb, tmp, strlen(tmp));
-	uartRB_KickTx(&usart2_rb);
+	uartRB_Put(&usart3_rb, tmp, strlen(tmp));
+	uartRB_KickTx(&usart3_rb);
 }
 
-void output_ascii_si(int32_t val) {
+void output_ascii_si_xport(int32_t val) {
 	char tmp[34];
 	sprintf(tmp, "%-ld", val);
-	uartRB_Put(&usart2_rb, tmp, strlen(tmp));
-	uartRB_KickTx(&usart2_rb);
+	uartRB_Put(&usart3_rb, tmp, strlen(tmp));
+	uartRB_KickTx(&usart3_rb);
 }
 
-void output_ascii_fl(float val) {
+void output_ascii_fl_xport(float val) {
 	char tmp[34]; // TODO reicht hier die laenge mit timestamp?
 	sprintf(tmp, "%.2f", val); // @suppress("Float formatting support")
-	uartRB_Put(&usart2_rb, tmp, strlen(tmp));
-	uartRB_KickTx(&usart2_rb);
+	uartRB_Put(&usart3_rb, tmp, strlen(tmp));
+	uartRB_KickTx(&usart3_rb);
 }
 
 

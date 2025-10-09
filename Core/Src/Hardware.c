@@ -111,6 +111,15 @@ uint8_t readPumpRemote(void) {
 
 }
 
+void hw_xport_reset_disable(uint8_t val) {
+    // val = TRUE um der export nicht mehr zu resetten
+    // reset ist LOW-aktiv, wird auch LOW von HAL initialisiert.
+    if(val)
+        HAL_GPIO_WritePin(XPORT_RESET_GPIO_Port, XPORT_RESET_Pin, 1);
+    else
+        HAL_GPIO_WritePin(XPORT_RESET_GPIO_Port, XPORT_RESET_Pin, 0);
+}
+
 
 
 

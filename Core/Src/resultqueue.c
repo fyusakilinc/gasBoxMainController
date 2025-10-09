@@ -8,6 +8,7 @@
 #include "prioritylist.h"
 #include "zentrale.h"
 #include "remote.h"
+#include "remote_xport.h"
 
 
 //-------------------------PRIVATE DEFINES-----------------------------------------------------------------------------------
@@ -93,34 +94,50 @@ void resultQueue_pop(stack_item *sitem)
 	return;
 }
 
-void result_get_sero(void)
-{
+void result_get_sero(void) {
 	stack_item cmd_tmp;
 
-	while (get_anzBes_resultQueue() > 0 )
-	{
+	while (get_anzBes_resultQueue() > 0) {
 		resultQueue_pop(&cmd_tmp);
 
-		switch (cmd_tmp.cmd_sender)
-		{
-			case Q_RS232_UT0:
-				UartRB *rb = &uart4_rb;
-				uart_puti_rb(rb, cmd_tmp.cmd_ack);
-				uartRB_KickTx(rb);
-				uart_puts_rb(rb," ");
-				output_ascii_fl(cmd_tmp.par0);
-				//uart_puts_rb(rb," ");
-				//output_ascii_fl(cmd_tmp.par1);
-				//uart_puts_rb(rb," ");
-				//output_ascii_fl(cmd_tmp.par2);
-				//uart_puts_rb(rb," ");
-				//output_ascii_fl(cmd_tmp.par3);
-				//uart_puts_rb(rb," ");
-				if (strlen(cmd_tmp.str) > 0) {
-					uart_puts_rb(rb,cmd_tmp.str);
-				}
+		switch (cmd_tmp.cmd_sender) {
+		case Q_RS232:
+			UartRB *rb1 = &usart2_rb;
+			uart_puti_rb(rb1, cmd_tmp.cmd_ack);
+			uartRB_KickTx(rb1);
+			uart_puts_rb(rb1, " ");
+			output_ascii_fl(cmd_tmp.par0);
+			//uart_puts_rb(rb," ");
+			//output_ascii_fl(cmd_tmp.par1);
+			//uart_puts_rb(rb," ");
+			//output_ascii_fl(cmd_tmp.par2);
+			//uart_puts_rb(rb," ");
+			//output_ascii_fl(cmd_tmp.par3);
+			//uart_puts_rb(rb," ");
+			if (strlen(cmd_tmp.str) > 0) {
+				uart_puts_rb(rb1, cmd_tmp.str);
+			}
 
-				break;
+			break;
+
+		case Q_XPORT:
+			UartRB *rb2 = &usart3_rb;
+			uart_puti_rb(rb2, cmd_tmp.cmd_ack);
+			uartRB_KickTx(rb2);
+			uart_puts_rb(rb2, " ");
+			output_ascii_fl_xport(cmd_tmp.par0);
+			//uart_puts_rb(rb," ");
+			//output_ascii_fl(cmd_tmp.par1);
+			//uart_puts_rb(rb," ");
+			//output_ascii_fl(cmd_tmp.par2);
+			//uart_puts_rb(rb," ");
+			//output_ascii_fl(cmd_tmp.par3);
+			//uart_puts_rb(rb," ");
+			if (strlen(cmd_tmp.str) > 0) {
+				uart_puts_rb(rb2, cmd_tmp.str);
+			}
+
+			break;
 		};
 	};
 

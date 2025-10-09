@@ -30,6 +30,7 @@
 #include "Hardware.h"
 #include "iso.h"
 #include "remote.h"
+#include "remote_xport.h"
 #include "zentrale.h"
 #include "timer0.h"
 #include "func.h"
@@ -116,18 +117,22 @@ int main(void)
   MX_ADC5_Init();
   /* USER CODE BEGIN 2 */
   //--- Stacks fuer die Anfragen an Zentrale und MatchingCube vorbereiten ------
+  HAL_TIM_Base_Start_IT(&htim1);
   priolist_init();
   stacks_init();
   //--- Ergbenissstack fuer die Antworten von Zentrale und MatchingCube vorbereiten -------
   resultQueue_init();
   uart_initAll();
   remote_init();
+  remote_xport_init();
   zentrale_init();
   mio_init();
   mcp_init();
   apc_init();
   iso_init();
   rfg_init();
+  hw_xport_reset_disable(1);
+
 
   delay_ms(500);
   /* USER CODE END 2 */
@@ -141,8 +146,8 @@ int main(void)
     /* USER CODE BEGIN 3 */
 		hw_sero_get();
 		remote_sero_get();
+		remote_xport_sero_get();
 		gb_sero_get();
-		result_get_sero();
 		mio_sero_get();
 		mcp_sero_get();
 		apc_sero_get();
@@ -150,11 +155,13 @@ int main(void)
 
 		zentrale();
 
-		z_cmd_scheduler();
+
 		hw_sero_set();
 		mio_sero_set();
 		mcp_sero_set();
 		apc_sero_set();
+		z_cmd_scheduler();
+		result_get_sero();
   }
   /* USER CODE END 3 */
 }

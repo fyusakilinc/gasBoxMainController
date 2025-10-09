@@ -83,6 +83,8 @@ void Error_Handler(void);
 #define UC_AUX_RESET_GPIO_Port GPIOE
 #define MAX_VDDA_OK_Pin GPIO_PIN_10
 #define MAX_VDDA_OK_GPIO_Port GPIOE
+#define XPORT_RESET_Pin GPIO_PIN_15
+#define XPORT_RESET_GPIO_Port GPIOB
 #define UC_HEARTBEAT_Pin GPIO_PIN_3
 #define UC_HEARTBEAT_GPIO_Port GPIOD
 #define UC_ITL_OK_Pin GPIO_PIN_1

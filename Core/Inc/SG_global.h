@@ -88,8 +88,8 @@
 
 #define SG_ADM_PIN   		12345ul
 
-#define Q_RS232_XPORT       4
-#define Q_RS232_UT0      	3
+#define Q_XPORT   	    	4
+#define Q_RS232	     		3
 #define Q_ANALOG            2
 #define Q_ZENTRALE          1
 #define NO_QUELLE           0

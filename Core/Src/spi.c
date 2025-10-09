@@ -121,7 +121,7 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
 /* USER CODE BEGIN 1 */
 void spiSendByte(uint8_t data) {
     // send a byte over SPI and ignore reply (blocking)
-    HAL_SPI_Transmit(&hspi1, &data, 1, 100);
+    HAL_SPI_Transmit(&hspi1, &data, 1, 5);
 }
 
 uint8_t spiTransferByte(uint8_t txData) {

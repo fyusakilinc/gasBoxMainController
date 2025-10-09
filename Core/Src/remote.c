@@ -4,6 +4,7 @@
 #include "remote.h"
 #include "uart4.h"
 #include "usart.h"
+#include "rfg.h"
 #include "protocoll.h"
 #include "stacks.h"
 #include "resultqueue.h"
@@ -40,17 +41,6 @@ static volatile uint8_t nzeichen = 0;       // bytes buffered from UART ring
 // forward
 void parse_ascii(void);
 
-// passthrough to RFG
-//#define RFG_PASSTHRU
-#ifdef RFG_PASSTHRU
-static void forward_cmd(const char *cmdtxt, const char *valtxt) {
-    char out[2*TOKEN_LENGTH_MAX + 16];
-    int n = (valtxt && valtxt[0])
-          ? snprintf(out, sizeof(out), "%s %s;\r\n", cmdtxt, valtxt)
-          : snprintf(out, sizeof(out), "%s;\r\n",     cmdtxt);
-    if (n > 0) { uart_puts_rb(&uart4_rb, out); uartRB_KickTx(&uart4_rb); }
-}
-#endif
 
 static inline void ap_reset_state(char *cmd, uint8_t *cmd_len,
                                   char *vbuf, uint8_t *vlen,
@@ -196,6 +186,16 @@ void parse_ascii(void) {
 			uint16_t cmd_id = ASCII_CMD_MAX;
 			Binary_Search(ASCII_CMD_MAX, cmd, &cmd_id);
 
+#ifdef RFG_PASSTHRU
+			if (cmd_id >= CMD_MIN_RFG && cmd_id <= CMD_MAX_RFG) {
+			    // Forward the *raw* line the PC sent (what you buffered this tick)
+			    rfg_forward_line(msg, nzeichen);
+			    ap_reset_state(cmd, &cmd_len, vbuf, &vlen, &pflag, &eflag, &a_state);
+			    // Do NOT enqueue a stack item; just return to main loop
+			    return;
+			}
+#endif
+
 			// 2) build stack item (READ if no value, WRITE if value present & valid)
 			stack_item si = { 0 };
 			si.cmd_index = cmd_id;
@@ -222,11 +222,6 @@ void parse_ascii(void) {
 			} else {
 				(void) stack_insert_sero(si);
 			}
-
-			// 4) optional passthrough
-#ifdef RFG_PASSTHRU
-		        forward_cmd(cmd, (si.rwflg==WRITE) ? vbuf : NULL);
-		        #endif
 
 			// 5) reset for next command
 		    ap_reset_state(cmd, &cmd_len, vbuf, &vlen, &pflag, &eflag, &a_state);

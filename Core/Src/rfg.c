@@ -42,5 +42,15 @@ void rfg_sero_get(void) {
 		uartRB_KickTx(&usart2_rb);
 		//parse_ascii_rfg();  // just send back the rx to pc
 	}
+
 }
+
+#ifdef RFG_PASSTHRU
+void rfg_forward_line(volatile uint8_t *line, int len) {
+	if (len != 0) {
+		uartRB_Put(&uart4_rb, (const char*) line, len); // is this assignment correct? TODO!
+		uartRB_KickTx(&uart4_rb);
+	}
+}
+#endif
 

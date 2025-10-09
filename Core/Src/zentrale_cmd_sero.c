@@ -487,8 +487,16 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 
-	case CMD_POS_STA_RD: {
+	case CMD_POS_STA_RD: { // TODO: this is same with read valve status, ask this!!
+		double v;                                      // local storage
+		if (apc_get_valve_state(&v)) {
+			cmd.par0 = (float) v;                   // always an int here
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
 		break;
+
 	}
 
 // -----------

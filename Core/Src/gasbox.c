@@ -46,8 +46,22 @@ static uint8_t lengthRx = 0;
 static uint8_t dleFlag = 0;
 static uint8_t checksum = 0;
 
+// ---- sync mailbox ----
+
+typedef enum { GB_IDLE=0, GB_WAIT_RX, GB_DONE, GB_TIMED_OUT } GbState;
+static struct {
+	volatile GbState state;
+	volatile uint8_t expect_cmd;
+	volatile uint8_t have;
+	uint32_t deadline_ms;
+	GbReply r;
+} gb_sync = {.state = GB_IDLE};
+
 static void parse_binary_gasbox(void);
 void gb_on_frame(uint8_t cmd, uint8_t status, uint16_t value);
+void gasbox_on_reply(const GbReply *r);
+void gasbox_on_timeout(uint8_t expect_cmd);
+
 
 //----- GASBOX CONTROLLER -------------------------------------------------
 
@@ -59,6 +73,14 @@ void gb_sero_get(void)
         msg[nzeichen++] = (uint8_t)uartRB_Getc(&uart5_rb);
     }
     if (nzeichen) parse_binary_gasbox();
+
+}
+
+void gasbox_on_reply(const GbReply *r) {
+    // e.g., push to result queue, update state machine, etc.
+}
+void gasbox_on_timeout(uint8_t expect_cmd) {
+    // handle timeout
 }
 
 
@@ -143,30 +165,31 @@ static void parse_binary_gasbox(void) {
 			break;
 
 		case RMT_PARSE_PAKET: {
-		    // Expect 4 payload bytes + 1 checksum (net length 5)
-		    if (lengthRx == 5) {
-		        uint8_t cmd    = bufferRx[0];
-		        uint8_t status = bufferRx[1];
-		        uint8_t pH     = bufferRx[2];
-		        uint8_t pL     = bufferRx[3];
-		        uint8_t cks    = bufferRx[4];
+			// Expect 4 payload bytes + 1 checksum (net length 5)
+			if (lengthRx == 5) {
+				uint8_t cmd = bufferRx[0];
+				uint8_t status = bufferRx[1];
+				uint8_t pH = bufferRx[2];
+				uint8_t pL = bufferRx[3];
+				uint8_t cks = bufferRx[4];
 
-		        // checksum over the 4 payload bytes
-		        uint8_t sum = (uint8_t)(cmd + status + pH + pL);
+				// checksum over the 4 payload bytes
+				uint8_t sum = (uint8_t) (cmd + status + pH + pL);
 
-		        if (sum == cks) {
-		            uint16_t val = ((uint16_t)pH << 8) | pL;
-		            // Publish to mailbox: if someone is waiting for this cmd, wake them.
-		            gb_on_frame(cmd, status, val);
-		        }
-		        // else: bad checksum -> drop silently (or raise an error flag if you want)
-		    }
-		    // reset for next frame
-		    state     = RMT_WAIT_FOR_PAKET_START;
-		    lengthRx  = 0;
-		    checksum  = 0;
-		    dleFlag   = 0;
-		} break;
+				if (sum == cks) {
+					uint16_t val = ((uint16_t) pH << 8) | pL;
+					// Publish to mailbox: if someone is waiting for this cmd, wake them.
+					gb_on_frame(cmd, status, val);
+				}
+				// else: bad checksum -> drop silently (or raise an error flag if you want)
+			}
+			// reset for next frame
+			state = RMT_WAIT_FOR_PAKET_START;
+			lengthRx = 0;
+			checksum = 0;
+			dleFlag = 0;
+		}
+			break;
 		}
 	} while (ptr < nzeichen);
 }
@@ -184,7 +207,7 @@ static inline void gb_push_escaped(uint8_t **wp, uint8_t b){
 }
 
 /**
- * Build + queue one framed command to the gasbox on UART4.
+ * Build + queue one framed command to the gasbox on UART5.
  * payload = [ cmd, 0x00, param_H, param_L ] ; cks = sum(payload)
  * Returns 1 if queued, 0 if TX ring had no room.
  */
@@ -214,49 +237,75 @@ uint8_t gasbox_send(uint8_t cmd, uint16_t param)
     return 1;
 }
 
-// ---- sync mailbox ----
-static struct {
-    volatile uint8_t waiting;
-    volatile uint8_t expect_cmd;
-    volatile uint8_t have;
-    GbReply          r;
-} gb_sync = {0};
 
-void gb_on_frame(uint8_t cmd, uint8_t status, uint16_t value)
+
+void gb_on_frame(uint8_t cmd, uint8_t status, uint16_t value) {
+	// deliver to a waiting xfer if it matches the command we sent
+	// new non-blocking mailbox
+	if (gb_sync.state == GB_WAIT_RX && gb_sync.expect_cmd == cmd) {
+		gb_sync.r.cmd = cmd;
+		gb_sync.r.status = status;
+		gb_sync.r.value = value;
+		gb_sync.have = 1;
+	}
+	// else: unsolicited → raise events / z_set_error(...) as you like
+}
+
+// returns 1 if started, 0 if busy or TX fai
+uint8_t gasbox_req_start(uint8_t cmd, uint16_t param, uint32_t timeout_ms)
 {
-    // deliver to a waiting xfer if it matches the command we sent
-    if (gb_sync.waiting && gb_sync.expect_cmd == cmd) {
-        gb_sync.r.cmd = cmd; gb_sync.r.status = status; gb_sync.r.value = value;
-        gb_sync.have = 1;
-        gb_sync.waiting = 0;
-        return;
-    }
-    // else: unsolicited → raise events / z_set_error(...) as you like
+    if (gb_sync.state != GB_IDLE) return 0;
+    if (!gasbox_send(cmd, param)) return 0;                // queues to UART5 and kicks TX
+    gb_sync.expect_cmd = cmd;
+    gb_sync.have       = 0;
+    gb_sync.deadline_ms= HAL_GetTick() + timeout_ms;
+    gb_sync.state      = GB_WAIT_RX;
+    return 1;
+}
+
+//  returns 0=BUSY, 1=OK, 2=TIMEOUT
+uint8_t gasbox_req_poll(uint8_t *out_status, uint16_t *out_value) {
+	if (gb_sync.state != GB_WAIT_RX)
+		return 3;                 // not waiting
+	if (gb_sync.have) {
+		gb_sync.state = GB_IDLE;
+		gb_sync.have = 0;
+		if (out_status)
+			*out_status = gb_sync.r.status;
+		if (out_value)
+			*out_value = gb_sync.r.value;
+		return 1;                                         // OK
+	}
+	if ((int32_t) (HAL_GetTick() - gb_sync.deadline_ms) >= 0) {
+		gb_sync.state = GB_IDLE;
+		return 2;                                         // TIMEOUT
+	}
+	return 0;                                             // BUSY
 }
 
 /**
- * Send one request and wait for its echo parsed by the always-on gb_sero_get().
- * Returns 1 on success (out filled), 0 on timeout or queue failure.
+ * Send one request and wait for its echo (blocking for the caller).
+ * Assumes another task/main loop is calling gb_sero_get() to pump UART5.
+ * Returns 1 on success (out filled), 0 on timeout or TX failure.
  */
 uint8_t gasbox_xfer(uint8_t cmd, uint16_t param, GbReply *out, uint32_t timeout_ms)
 {
-    // only one outstanding transaction
-    if (gb_sync.waiting) return 0;
 
-    gb_sync.expect_cmd = cmd;
-    gb_sync.have = 0;
-    gb_sync.waiting = 1;
+    if (!gasbox_req_start(cmd, param, timeout_ms)) return 0;
 
-    if (!gasbox_send(cmd, param)) { gb_sync.waiting = 0; return 0; }
+    for (;;) {
+        uint8_t st, status; uint16_t value;
 
-    uint32_t t0 = HAL_GetTick();
-    while (!gb_sync.have) {
-        if ((HAL_GetTick() - t0) > timeout_ms) {
-            gb_sync.waiting = 0;
-            return 0;
+        st = gasbox_req_poll(&status, &value);
+        if (st == 0) {           // BUSY: still waiting
+            HAL_Delay(1);        // small yield; DON'T call gb_sero_get() here
+            continue;
         }
-        // do NOT call gb_sero_get() here; main loop owns it
+        if (st == 1) {           // OK
+            if (out) { out->cmd = cmd; out->status = status; out->value = value; }
+            return 1;
+        }
+        // st == 2 (TIMEOUT) or 3 (not waiting/unexpected)
+        return 0;
     }
-    *out = gb_sync.r;
-    return 1;
 }

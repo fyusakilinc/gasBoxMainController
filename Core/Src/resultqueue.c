@@ -103,9 +103,9 @@ void result_get_sero(void) {
 		switch (cmd_tmp.cmd_sender) {
 		case Q_RS232:
 			UartRB *rb1 = &usart2_rb;
-			uart_puti_rb(rb1, cmd_tmp.cmd_ack);
+			uartRB_Puti(rb1, cmd_tmp.cmd_ack);
 			uartRB_KickTx(rb1);
-			uart_puts_rb(rb1, " ");
+			uartRB_Puts(rb1, " ");
 			output_ascii_fl(cmd_tmp.par0);
 			//uart_puts_rb(rb," ");
 			//output_ascii_fl(cmd_tmp.par1);
@@ -115,16 +115,16 @@ void result_get_sero(void) {
 			//output_ascii_fl(cmd_tmp.par3);
 			//uart_puts_rb(rb," ");
 			if (strlen(cmd_tmp.str) > 0) {
-				uart_puts_rb(rb1, cmd_tmp.str);
+				uartRB_Puts(rb1, cmd_tmp.str);
 			}
 
 			break;
 
 		case Q_XPORT:
 			UartRB *rb2 = &usart3_rb;
-			uart_puti_rb(rb2, cmd_tmp.cmd_ack);
+			uartRB_Puti(rb2, cmd_tmp.cmd_ack);
 			uartRB_KickTx(rb2);
-			uart_puts_rb(rb2, " ");
+			uartRB_Puts(rb2, " ");
 			output_ascii_fl_xport(cmd_tmp.par0);
 			//uart_puts_rb(rb," ");
 			//output_ascii_fl(cmd_tmp.par1);
@@ -134,7 +134,7 @@ void result_get_sero(void) {
 			//output_ascii_fl(cmd_tmp.par3);
 			//uart_puts_rb(rb," ");
 			if (strlen(cmd_tmp.str) > 0) {
-				uart_puts_rb(rb2, cmd_tmp.str);
+				uartRB_Puts(rb2, cmd_tmp.str);
 			}
 
 			break;

@@ -232,7 +232,7 @@ uint8_t gasbox_send(uint8_t cmd, uint16_t param)
     uint8_t len = (uint8_t)(w - frame);
 
     // queue to UART4 ring
-    if (!uartRB_Put(&uart5_rb, (char*)frame, len)) return 0;
+    if (!uartRB_Put(&uart5_rb, frame, len)) return 0;
     uartRB_KickTx(&uart5_rb);
     return 1;
 }

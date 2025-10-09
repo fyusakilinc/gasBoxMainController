@@ -23,15 +23,14 @@ typedef struct {
 
     // one-byte IT buffers
     uint8_t it_rx;
-    uint8_t it_tx_scratch; // optional
     volatile uint8_t tx_hold[BUFLEN];
 } UartRB;
 
 void uartRB_Init(UartRB *p, UART_HandleTypeDef *huart, IRQn_Type irqn);
 uint8_t uartRB_Put(UartRB *p, const void *buf, uint8_t n);
 uint8_t uartRB_Puts(UartRB *p, const char *s);
+uint8_t uartRB_Puti(UartRB *rb, uint32_t val);
 void     uartRB_KickTx(UartRB *p);
-uint8_t  uartRB_RxAvail(const UartRB *p);
 uint8_t  uartRB_Getc(UartRB *p);
 void uart_initAll(void);
 
@@ -48,7 +47,3 @@ extern UartRB uart5_rb;
 extern UartRB usart1_rb;
 extern UartRB usart2_rb;
 extern UartRB usart3_rb;
-
-void uart_puts_rb(UartRB *rb, const char *s);
-void uart_puti_rb(UartRB *rb, long v) ;
-void uart_putf_rb(UartRB *rb, double v);

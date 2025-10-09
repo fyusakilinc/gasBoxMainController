@@ -150,10 +150,38 @@ uint8_t uartRB_Put(UartRB *p, const void *buf, uint8_t n) {
 	}
 	for (uint8_t i = 1; i <= n; i++) {
 		p->tx[p->tx_in] = src[i-1];
-		p->tx_in = (uint8_t) ((p->tx_in + 1) % BUFLEN);
+		p->tx_in = (uint16_t) ((p->tx_in + 1) % BUFLEN);
 	}
 	HAL_NVIC_EnableIRQ(p->irqn);
 	return 1;
+}
+
+
+uint8_t uartRB_Puts(UartRB *rb, const char *s) {
+	HAL_NVIC_DisableIRQ(rb->irqn);
+	uint8_t n;
+	n = strlen(s);
+	if (n < rb_free_tx(rb)) {
+		for (uint8_t i = 1; i <= n; i++) {
+			rb->tx[rb->tx_in] = s[i - 1];
+			rb->tx_in = (uint16_t) ((rb->tx_in + 1) % BUFLEN);
+		}
+		HAL_NVIC_EnableIRQ(rb->irqn);
+		return 1;
+	}
+	HAL_NVIC_EnableIRQ(rb->irqn);
+	return 0;
+}
+
+uint8_t uartRB_Puti(UartRB *rb, uint32_t val) {
+	HAL_NVIC_DisableIRQ(rb->irqn);
+	char txt[20];
+	uint8_t tmp = 0;
+	sprintf(txt, "%8li", val);
+	tmp = uartRB_Puts(rb, txt);
+	HAL_NVIC_EnableIRQ(rb->irqn);
+	uartRB_KickTx(rb);
+	return tmp;
 }
 
 uint8_t uartRB_Getc(UartRB *p) {
@@ -165,38 +193,3 @@ uint8_t uartRB_Getc(UartRB *p) {
 	HAL_NVIC_EnableIRQ(p->irqn);
 	return c;
 }
-
-// ---------- tiny UART helpers (RB-safe) ----------
-void uart_put_chunked(UartRB *rb, const char *buf, size_t len) {
-    // uartRB_Put requires the whole chunk; split if needed
-    while (len) {
-        // send up to BUFLEN-1 bytes per chunk to be safe
-        size_t n = len > (BUFLEN - 1) ? (BUFLEN - 1) : len;
-        if (!uartRB_Put(rb, buf, (uint8_t)n)) {
-            // if RB is full, you can spin or yield briefly
-            // (adjust to your scheduler; worst case: busy-wait)
-            continue;
-        }
-        uartRB_KickTx(rb);
-        buf += n; len -= n;
-    }
-}
-
-void uart_puts_rb(UartRB *rb, const char *s) {
-    uart_put_chunked(rb, s, strlen(s));
-}
-
-void uart_puti_rb(UartRB *rb, long v) {
-    char tmp[24];
-    int n = snprintf(tmp, sizeof tmp, "%ld", v);
-    if (n > 0) uart_put_chunked(rb, tmp, (size_t)n);
-}
-
-void uart_putf_rb(UartRB *rb, double v) {
-    // print compact; change to "%.3f" if you want fixed precision
-    char tmp[48];
-    int n = snprintf(tmp, sizeof tmp, "%.6g", v);
-    if (n > 0) uart_put_chunked(rb, tmp, (size_t)n);
-}
-
-

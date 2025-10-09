@@ -35,6 +35,8 @@
 #define P_ID_CONTROL_MODE		0x0F020000  	// Control Mode (2=Pos, 4=Open, 5=Pressure)
 #define P_ID_ERR_RECOVER		0x0F506600 		// bool, attempts to fix the error without restart
 #define P_ID_RES_CTLR			0x0F500100		// bool, Emulates a power cycle
+#define P_ID_ERR_NUM			0x0F300600		// UINT16, get error number
+#define P_ID_ERR_CODE			0x0F300700		// UINT16, get error code
 
 // valve
 #define P_ID_VALVE_POS			0x10010000 		// float, read the valve actual position
@@ -208,7 +210,7 @@ static int apc_parse_p_value_double(const char *line,
 	}  // device reported an error
     if (func != 0x0B) return 0;             // expect GET echo
     if (pid  != expect_param) return 0;     // sanity check: same param
-    if (idx  != 0x00) return 0;             // if you only use index 0
+    if (idx  != 0x00) return 0;             // ionly use index 0
 
     if (*vstr == '\0') return 0;            // missing value
 
@@ -219,6 +221,25 @@ static int apc_parse_p_value_double(const char *line,
     *out = val;
     return 1;
 } // we are getting all the params in double because cmd.param is double
+
+static int apc_parse_p_value_u16(const char *line, uint32_t expect_param,
+		uint16_t *out) {
+	unsigned err = 0, func = 0, pid = 0, idx = 0;
+	const char *vstr = NULL;
+	if (!apc_parse_p_header(line, &err, &func, &pid, &idx, &vstr))
+		return 0;
+	if (err != 0 || func != 0x0B || pid != expect_param || idx != 0x00)
+		return 0;
+	if (*vstr == '\0')
+		return 0;
+	errno = 0;
+	char *endp = NULL;
+	unsigned long u = strtoul(vstr, &endp, 10);
+	if (endp == vstr || errno == ERANGE || u > UINT32_MAX)
+		return 0;
+	*out = (uint16_t) u;
+	return 1;
+}
 
 
 //  ----- commands -----
@@ -248,6 +269,28 @@ uint8_t apc_cmd_close(void) {
 	return apc_p_set_u32(P_ID_CONTROL_MODE, 3) ? 1 : 0;
 }
 
+uint8_t apc_get_err_num(double *out) {
+	char line[64];
+	uint16_t u = 0;
+	if (!apc_p_get(P_ID_ERR_NUM, line, sizeof(line)))
+		return 0;
+	if (!apc_parse_p_value_u16(line, P_ID_ERR_NUM, &u))
+		return 0;
+	*out = (double) u;              // cmd.param API stays double
+	return 1;
+}
+
+uint8_t apc_get_err_code(double *out) {
+	char line[64];
+	uint16_t u = 0;
+	if (!apc_p_get(P_ID_ERR_CODE, line, sizeof(line)))
+		return 0;
+	if (!apc_parse_p_value_u16(line, P_ID_ERR_CODE, &u))
+		return 0;
+	*out = (double) u;              // cmd.param API stays double
+	return 1;
+}
+
 
 //  ----- VALVE -----
 
@@ -255,8 +298,7 @@ uint8_t apc_get_valve_state(double *out) {
 	char line[64];
 	if (!apc_p_get(P_ID_VALVE_POS_STATE, line, sizeof(line)))
 		return 0;
-	*out = (uint32_t) strtoul(strrchr(line, ' ') + 1, NULL, 10);
-	return 1;
+	return apc_parse_p_value_double(line, P_ID_VALVE_POS_STATE, out) ? 1 : 0;
 }
 
 //  ----- POSITION CONTROL -----
@@ -289,9 +331,13 @@ uint8_t apc_set_pos_ramp_en(double en) {
 
 uint8_t apc_get_pos_ramp_en(double *out) {
 	char line[64];
+	uint16_t u = 0;
 	if (!apc_p_get(P_ID_RAMP_ENABLE_POS, line, sizeof(line)))
 		return 0;
-	return apc_parse_p_value_double(line, P_ID_RAMP_ENABLE_POS, out) ? 1 : 0;
+	if (!apc_parse_p_value_u16(line, P_ID_RAMP_ENABLE_POS, &u))
+		return 0;
+	*out = (double) u;              // cmd.param API stays double
+	return 1;
 }
 
 uint8_t apc_set_pos_ramp_time(double v) {
@@ -319,9 +365,13 @@ uint8_t apc_set_pos_ramp_mode(double v) {
 }
 uint8_t apc_get_pos_ramp_mode(double *out) {
 	char line[64];
+	uint16_t u = 0;
 	if (!apc_p_get(P_ID_RAMP_MODE_POS, line, sizeof(line)))
 		return 0;
-	return apc_parse_p_value_double(line, P_ID_RAMP_MODE_POS, out) ? 1 : 0;
+	if (!apc_parse_p_value_u16(line, P_ID_RAMP_MODE_POS, &u))
+		return 0;
+	*out = (double) u;              // cmd.param API stays double
+	return 1;
 }
 
 
@@ -352,9 +402,13 @@ uint8_t apc_set_pre_unit(double v) {
 }
 uint8_t apc_get_pre_unit(double *out) {
 	char line[64];
+	uint16_t u = 0;
 	if (!apc_p_get(P_ID_PRESS_UNIT, line, sizeof(line)))
 		return 0;
-	return apc_parse_p_value_double(line, P_ID_PRESS_UNIT, out) ? 1 : 0;
+	if (!apc_parse_p_value_u16(line, P_ID_PRESS_UNIT, &u))
+		return 0;
+	*out = (double) u;              // cmd.param API stays double
+	return 1;
 }
 
 // APC:CTL:SEL / APC:CTL:SEL?
@@ -363,7 +417,11 @@ uint8_t apc_set_ctlr_selector(double v){    // v scaled per scheme
 }
 uint8_t apc_get_ctlr_selector(double *out) {
 	char line[64];
+	uint16_t u = 0;
 	if (!apc_p_get(P_ID_CTLR_SELECTOR, line, sizeof(line)))
 		return 0;
-	return apc_parse_p_value_double(line, P_ID_CTLR_SELECTOR, out) ? 1 : 0;
+	if (!apc_parse_p_value_u16(line, P_ID_CTLR_SELECTOR, &u))
+		return 0;
+	*out = (double) u;              // cmd.param API stays double
+	return 1;
 }

@@ -309,10 +309,24 @@ void z_cmd_sero(stack_item cmd) {
 		break;
 	}
 	case CMD_APC_ERN_RD: {
+		double v;                                      // local storage
+		if (apc_get_err_num(&v)) {
+			cmd.par0 = (float) v;                   // always an int here
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
 		break;
 	}
 
 	case CMD_APC_ERC_RD: {
+		double v;                                      // local storage
+		if (apc_get_err_code(&v)) {
+			cmd.par0 = (float) v;                   // always an int here
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		} else {
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		}
 		break;
 	}
 	case CMD_APC_VAL: {

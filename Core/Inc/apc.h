@@ -15,7 +15,8 @@ uint8_t apc_cmd_close (void);
 uint8_t apc_set_acc_mode(double v);
 uint8_t apc_set_ctl_mode(double v);
 uint8_t apc_get_ctl_mode(double *out);
-
+uint8_t apc_get_err_num(double *out);
+uint8_t apc_get_err_code(double *out);
 
 uint8_t apc_set_valve_state(double v);
 uint8_t apc_get_valve_state(double *out);

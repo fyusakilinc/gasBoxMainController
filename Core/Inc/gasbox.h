@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 void gb_sero_get(void);
 
 // one parsed reply

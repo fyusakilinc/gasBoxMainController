@@ -162,7 +162,7 @@ static uint8_t apc_p_set_f(uint32_t param, double val){
     char buf[64];
     /* Use %.6g unless your device requires fixed decimals like %.3f */
     int n = snprintf(buf, sizeof(buf),
-                     "p:01%08lX%02X%.6g" APC_EOL,
+                     "p:01%08lX%02X%.2g" APC_EOL,
                      (unsigned long)param, 0, val);
     return (n > 0) ? apc_puts(buf, (uint8_t)n) : 0;
 }

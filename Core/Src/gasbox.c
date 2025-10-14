@@ -288,24 +288,40 @@ uint8_t gasbox_req_poll(uint8_t *out_status, uint16_t *out_value) {
  * Assumes another task/main loop is calling gb_sero_get() to pump UART5.
  * Returns 1 on success (out filled), 0 on timeout or TX failure.
  */
-uint8_t gasbox_xfer(uint8_t cmd, uint16_t param, GbReply *out, uint32_t timeout_ms)
-{
+uint8_t gasbox_xfer(uint8_t cmd, uint16_t param, GbReply *out,
+		uint32_t timeout_ms) {
 
-    if (!gasbox_req_start(cmd, param, timeout_ms)) return 0;
+	// only one outstanding transaction allowed at a time
+	if (gb_sync.state == GB_WAIT_RX)
+		return 0;
 
-    for (;;) {
-        uint8_t st, status; uint16_t value;
+	// set up sync mailbox
+	gb_sync.expect_cmd = cmd;
+	gb_sync.have = 0;
+	gb_sync.state = GB_WAIT_RX;
+	// send the request frame
+	if (!gasbox_send(cmd, param)) {
+		gb_sync.state = GB_IDLE;
+		return 0;
+	}
 
-        st = gasbox_req_poll(&status, &value);
-        if (st == 0) {           // BUSY: still waiting
-            HAL_Delay(1);        // small yield; DON'T call gb_sero_get() here
-            continue;
-        }
-        if (st == 1) {           // OK
-            if (out) { out->cmd = cmd; out->status = status; out->value = value; }
-            return 1;
-        }
-        // st == 2 (TIMEOUT) or 3 (not waiting/unexpected)
-        return 0;
-    }
+	for (;;) {
+		// Pump UART ring buffer and parse any new bytes
+		gb_sero_get();
+
+		// Check if reply arrived
+		if (gb_sync.have) {
+			if (out)
+				*out = gb_sync.r;
+			gb_sync.state = GB_IDLE;
+			gb_sync.have = 0;
+			return 1;   // success
+		}
+
+		// Timeout check
+		if ((int32_t) (HAL_GetTick() - gb_sync.deadline_ms) >= 0) {
+			gb_sync.state = GB_IDLE;
+			return 0;   // timeout
+		}
+	}
 }

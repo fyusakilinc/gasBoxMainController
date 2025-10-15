@@ -180,7 +180,7 @@ void z_cmd_sero(stack_item cmd) {
 		// Valves OPEN-CLOSE-READ
 	case CMD_V3_SET: {
 		uint16_t p = (uint16_t) cmd.par0;
-		uint8_t ret;
+		uint8_t ret = 0;
 		if (p) {
 			if (!(iso_valve_get() || door_switch_get()))
 				ret = z_valve_open(3);
@@ -204,7 +204,7 @@ void z_cmd_sero(stack_item cmd) {
 
 	case CMD_V4_SET: {
 		uint16_t p = (uint16_t) cmd.par0;
-		uint8_t ret;
+		uint8_t ret = 0;
 		uint16_t st; // v4 cant be opened when atm, door switch active, and v3 is open
 		z_valve_get(3, &st);
 
@@ -275,7 +275,7 @@ void z_cmd_sero(stack_item cmd) {
 
 	case CMD_SET_T: {
 		float v = cmd.par0;
-		if (v >= 120)
+		if (v > 120.0f)
 			cmd.cmd_ack = CMR_COMMANDDENIED;
 		else {
 			set_TC_STP(v);
@@ -523,18 +523,22 @@ void z_cmd_sero(stack_item cmd) {
 // -----------
 
 	case CMD_ISO_V1: {
-		uint16_t state;	double pos; uint8_t pos70;
-		z_valve_get(3, &state);
-		apc_get_pos(&pos);
-		if (pos >= 70)
-			pos70 = 1;
-		else
-			pos70 = 0;
-		if (!(state || atm_sensor_get() || pos70)) {
-			iso_valve_set((uint8_t) cmd.par0);
-			cmd.cmd_ack = CMR_COMMANDDENIED;
-		} else
-			cmd.cmd_ack = CMR_SUCCESSFULL;
+		uint16_t want = (uint16_t)cmd.par0;  // 0=close, 1=open
+	    uint8_t  ok = 0;
+		if (want) {
+			uint16_t v3;	double apc_pos;
+			z_valve_get(3, &v3);             // V3 state
+			apc_get_pos(&apc_pos);           // APC position in %
+			// Block opening if any safety is active:
+			if (!(v3 || door_switch_get() || (apc_pos > 20.0))) {
+				iso_valve_set(1);
+				ok = 1;
+			}
+		} else {
+			iso_valve_set(0);                 // closing is always allowed
+			ok = 1;
+		}
+		cmd.cmd_ack = ok ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
 		break;
 	}
 

@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "SG_global.h"
 #include "protocoll.h"
 #include "cmdlist.h"
@@ -15,6 +16,29 @@
 #include "apc.h"
 #include "iso.h"
 #include "rfg.h"
+
+//--- RFG HELPER FUNCTIONS --------------------------------------------------------------------------------------------------
+// Helper function for RFG commands
+static void handle_rfg_command(stack_item* cmd, const char* cmd_str, float param, bool is_write, unsigned long timeout_ms) {
+	float out = 0.0f;
+	if (rfg_xfer(cmd_str, param, is_write, timeout_ms, &out)) {
+		// Check response type
+		if (out < 0) {
+			cmd->cmd_ack = CMR_COMMANDDENIED;  // Unknown response
+		} else if (out > 1000) {
+			cmd->cmd_ack = (uint8_t)out;  // RFG error code (Exxx;)
+		} else {
+			cmd->cmd_ack = CMR_SUCCESSFULL;  // Success (; or >OK; or numeric value)
+		}
+	} else {
+		cmd->cmd_ack = CMR_COMMANDDENIED;  // Timeout or communication error
+	}
+	cmd->par0 = out;
+}
+
+// Convenience macros for common RFG command patterns
+#define RFG_READ(cmd_str) handle_rfg_command(&cmd, cmd_str, 0, false, 1000)
+#define RFG_WRITE(cmd_str) handle_rfg_command(&cmd, cmd_str, cmd.par0, true, 1000)
 
 //--- PRIVATE DEFINES -------------------------------------------------------------------------------------------------------
 #define Z_MAX_HIGHPRIO_NUM			5                     //max.Durchdatz der Befehlsverarbeitung für die Befehlen mit der höchsten Priorität
@@ -622,36 +646,272 @@ void z_cmd_sero(stack_item cmd) {
 	}
 
 // -----------
+
 	case CMD_RF: {
-		float* out = NULL;
-		cmd.cmd_ack = rfg_xfer("RF", cmd.par0, 1, 100, out) ? CMR_SUCCESSFULL: CMR_COMMANDDENIED;
+		RFG_WRITE("RF");
 		break;
 	}
 
 	case CMD_RF_RD: {
-		float *out = NULL;
-		cmd.cmd_ack = rfg_xfer("RF? ", cmd.par0, 1, 100, out) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
-		cmd.par0 = *out;
+		RFG_READ("RF?");
 		break;
 	}
 
 	case CMD_SPC_CTL: {
-		float *out = NULL;
-		cmd.cmd_ack =
-				rfg_xfer("SPC:CTL", cmd.par0, 1, 100, out) ?
-						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		RFG_WRITE("SPC:CTL");
 		break;
 	}
 
 	case CMD_SPC_CTL_RD: {
-		float *out = NULL;
-		cmd.cmd_ack =
-				rfg_xfer("SPC:CTL? ", cmd.par0, 1, 100, out) ?
-						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
-		cmd.par0 = *out;
+		RFG_READ("SPC:CTL?");
 		break;
 	}
 
+	case CMD_SPC_T_RD: {
+		RFG_READ("SPC:T?");
+		break;
+	}
+
+	case CMD_SPC_UDC_RD: {
+		RFG_READ("SPC:UDC?");
+		break;
+	}
+
+	// Power commands
+	case CMD_PWR_PF_RD: {
+		RFG_READ("PWR:PF?");
+		break;
+	}
+
+	case CMD_PWR_PF: {
+		RFG_WRITE("PWR:PF");
+		break;
+	}
+
+	case CMD_PWR_PFS_RD: {
+		RFG_READ("PWR:PFS?");
+		break;
+	}
+
+	case CMD_PWR_PMD: {
+		RFG_WRITE("PWR:PMD");
+		break;
+	}
+
+	case CMD_PWR_PMD_RD: {
+		RFG_READ("PWR:PMD?");
+		break;
+	}
+
+	case CMD_PWR_PMDS_RD: {
+		RFG_READ("PWR:PMDS?");
+		break;
+	}
+
+	case CMD_PWR_PREA: {
+		RFG_WRITE("PWR:PREA");
+		break;
+	}
+
+	case CMD_PWR_PREA_RD: {
+		RFG_READ("PWR:PREA?");
+		break;
+	}
+
+	case CMD_PWR_PREAS_RD: {
+		RFG_READ("PWR:PREAS?");
+		break;
+	}
+
+	case CMD_PWR_DCB: {
+		RFG_WRITE("PWR:DCB");
+		break;
+	}
+
+	case CMD_PWR_DCB_RD: {
+		RFG_READ("PWR:DCB?");
+		break;
+	}
+
+	case CMD_PWR_DCBS_RD: {
+		RFG_READ("PWR:DCBS?");
+		break;
+	}
+
+	// Pulse commands
+	case CMD_PLS_P_RD: {
+		RFG_READ("PLS:P?");
+		break;
+	}
+
+	case CMD_PLS_P: {
+		RFG_WRITE("PLS:P");
+		break;
+	}
+
+	case CMD_PLS_LEN_RD: {
+		RFG_READ("PLS:LEN?");
+		break;
+	}
+
+	case CMD_PLS_LEN: {
+		RFG_WRITE("PLS:LEN");
+		break;
+	}
+
+	case CMD_PLS_PER_RD: {
+		RFG_READ("PLS:PER?");
+		break;
+	}
+
+	case CMD_PLS_PER: {
+		RFG_WRITE("PLS:PER");
+		break;
+	}
+
+	// Ignition commands
+	case CMD_IGN_CL_RD: {
+		RFG_READ("IGN:CL?");
+		break;
+	}
+
+	case CMD_IGN_CL: {
+		RFG_WRITE("IGN:CL");
+		break;
+	}
+
+	case CMD_IGN_CT_RD: {
+		RFG_READ("IGN:CT?");
+		break;
+	}
+
+	case CMD_IGN_CT: {
+		RFG_WRITE("IGN:CT");
+		break;
+	}
+
+	case CMD_IGN_I_RD: {
+		RFG_READ("IGN:I?");
+		break;
+	}
+
+	case CMD_IGN_I: {
+		RFG_WRITE("IGN:I");
+		break;
+	}
+
+	case CMD_IGN_PFI_RD: {
+		RFG_READ("IGN:PFI?");
+		break;
+	}
+
+	case CMD_IGN_PFI: {
+		RFG_WRITE("IGN:PFI");
+		break;
+	}
+
+	case CMD_IGN_TI_RD: {
+		RFG_READ("IGN:TI?");
+		break;
+	}
+
+	case CMD_IGN_TI: {
+		RFG_WRITE("IGN:TI");
+		break;
+	}
+
+	case CMD_IGN_TS_RD: {
+		RFG_READ("IGN:TS?");
+		break;
+	}
+
+	case CMD_IGN_TS: {
+		RFG_WRITE("IGN:TS");
+		break;
+	}
+
+	// Timer commands
+	case CMD_TI_RST_RD: {
+		RFG_READ("TI:RST?");
+		break;
+	}
+
+	case CMD_TI_RST: {
+		RFG_WRITE("TI:RST");
+		break;
+	}
+
+	// Matching commands
+	case CMD_MAT_CT_RD: {
+		RFG_READ("MAT:CT?");
+		break;
+	}
+
+	case CMD_MAT_CT: {
+		RFG_WRITE("MAT:CT");
+		break;
+	}
+
+	case CMD_MAT_CTS_RD: {
+		RFG_READ("MAT:CTS?");
+		break;
+	}
+
+	case CMD_MAT_CL: {
+		RFG_WRITE("MAT:CL");
+		break;
+	}
+
+	case CMD_MAT_CL_RD: {
+		RFG_READ("MAT:CL?");
+		break;
+	}
+
+	case CMD_MAT_CLS_RD: {
+		RFG_READ("MAT:CLS?");
+		break;
+	}
+
+	case CMD_MAT_MMD_RD: {
+		RFG_READ("MAT:MMD?");
+		break;
+	}
+
+	case CMD_MAT_MMD: {
+		RFG_WRITE("MAT:MMD");
+		break;
+	}
+
+	// EEPROM commands
+	case CMD_EE_PRF_RD: {
+		RFG_READ("EE:PRF?");
+		break;
+	}
+
+	case CMD_EE_LDPRF: {
+		RFG_WRITE("EE:LDPRF");
+		break;
+	}
+
+	case CMD_EE_DPRF_RD: {
+		RFG_READ("EE:DPRF?");
+		break;
+	}
+
+	case CMD_EE_DPRF: {
+		RFG_WRITE("EE:DPRF");
+		break;
+	}
+
+	case CMD_MAT_T_RD: {
+		RFG_READ("MAT:T?");
+		break;
+	}
+
+	case CMD_EE_STPRF: {
+		RFG_WRITE("EE:STPRF");
+		break;
+	}
 
 // -----------
 

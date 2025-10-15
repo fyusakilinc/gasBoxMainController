@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "rfg.h"
 #include "uart4.h"
 #include "usart.h"
@@ -200,15 +201,45 @@ static RfgSync rfg_sync = {0};
 
 static void arrived(const char* line, const double *dv, uint8_t had_error)
 {
+    // Check for error responses (Exxx; format from RFG manual)
+    if (line[0] == 'E' && strlen(line) > 1) {
+        // Parse error code from Exxx; format
+        char *endp = NULL;
+        long error_code = strtol(line + 1, &endp, 10);
+        if (endp != line + 1 && error_code > 0) {
+            // Store error code in sync for rfg_xfer to return
+            rfg_sync.value = (double)error_code;
+            rfg_sync.have = 1;
+            return;
+        }
+    }
+    
+    // Check for warning responses (Wxxx; format)
+    if (line[0] == 'W' && strlen(line) > 1) {
+        // Treat warnings as success but log them
+        z_set_error(SG_ERR_RFG);
+    }
+
     // If you want to latch explicit "ERR:NNN" replies too, detect here:
     if (strncasecmp(line, "ERR:", 4) == 0) {
-        z_set_error(SG_ERR_RFG);// you can store this somewhere if needed
+        z_set_error(SG_ERR_RFG);
     }
 
     if (rfg_sync.state == RFG_WAIT_RX && !rfg_sync.have) {
         strncpy(rfg_sync.reply, line, sizeof rfg_sync.reply - 1);
         rfg_sync.reply[sizeof rfg_sync.reply - 1] = 0;
-        rfg_sync.value = (dv ? *dv : 0.0);
+        
+        // Only set success for proper success responses
+        if (strcmp(line, ";") == 0 || strncmp(line, ">OK;", 4) == 0) {
+            // Success responses: ";" or ">OK;"
+            rfg_sync.value = (dv ? *dv : 0.0);
+        } else if (dv != NULL) {
+            // Numeric responses (for queries like "RF?")
+            rfg_sync.value = *dv;
+        } else {
+            // Unknown response - treat as error
+            rfg_sync.value = -1.0;  // Signal error
+        }
         rfg_sync.have = 1;
     }
 
@@ -252,8 +283,8 @@ static uint8_t rfg_send_line(const char *s)
 
 uint8_t rfg_xfer(const char *s, float param, bool wr, uint32_t timeout_ms, float* out) {
 	char buf[64];
-	if (wr) snprintf(buf, sizeof buf, "%s %u", s, (unsigned)param);
-	else    snprintf(buf, sizeof buf, "%s", s);
+	if (wr) snprintf(buf, sizeof buf, "%s %u;", s, (unsigned)param);
+	else    snprintf(buf, sizeof buf, "%s?;", s);
 
 	// Arm mailbox
 	rfg_sync.state = RFG_WAIT_RX;

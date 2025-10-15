@@ -14,6 +14,7 @@
 #include "ad5592.h"
 #include "apc.h"
 #include "iso.h"
+#include "rfg.h"
 
 //--- PRIVATE DEFINES -------------------------------------------------------------------------------------------------------
 #define Z_MAX_HIGHPRIO_NUM			5                     //max.Durchdatz der Befehlsverarbeitung für die Befehlen mit der höchsten Priorität
@@ -619,6 +620,38 @@ void z_cmd_sero(stack_item cmd) {
 		cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
+
+// -----------
+	case CMD_RF: {
+		float* out = NULL;
+		cmd.cmd_ack = rfg_xfer("RF", cmd.par0, 1, 100, out) ? CMR_SUCCESSFULL: CMR_COMMANDDENIED;
+		break;
+	}
+
+	case CMD_RF_RD: {
+		float *out = NULL;
+		cmd.cmd_ack = rfg_xfer("RF? ", cmd.par0, 1, 100, out) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.par0 = *out;
+		break;
+	}
+
+	case CMD_SPC_CTL: {
+		float *out = NULL;
+		cmd.cmd_ack =
+				rfg_xfer("SPC:CTL", cmd.par0, 1, 100, out) ?
+						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		break;
+	}
+
+	case CMD_SPC_CTL_RD: {
+		float *out = NULL;
+		cmd.cmd_ack =
+				rfg_xfer("SPC:CTL? ", cmd.par0, 1, 100, out) ?
+						CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		cmd.par0 = *out;
+		break;
+	}
+
 
 // -----------
 

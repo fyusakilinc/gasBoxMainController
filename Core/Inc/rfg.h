@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+
 //--- PUBLIC FUNKTIONSDEKLARATION -------------------------------------------------------------------------------------------
 // erhält und verarbeitet den Befehl(in binäry- oder ASCII-Format) per UART4
 void rfg_init(void);
@@ -13,3 +14,4 @@ void rfg_sero_get(void);
 void rfg_forward_line(const uint8_t *line, int len);
 #endif
 uint8_t rf_cmd_is_on(const char *cmd, const char *vbuf, uint8_t pflag);
+uint8_t rfg_xfer(const char *s, float param, bool wr, uint32_t timeout_ms, float* out);

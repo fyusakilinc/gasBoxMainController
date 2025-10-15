@@ -66,6 +66,13 @@ void gasbox_on_timeout(uint8_t expect_cmd);
 //----- GASBOX CONTROLLER -------------------------------------------------
 
 // Gasbox (UART4, binary)
+
+// ---- public API ----
+void gb_init(void) {
+	nzeichen = 0;
+	memset((void*) msg, 0, sizeof(msg));
+}
+
 void gb_sero_get(void)
 {
     nzeichen = 0;

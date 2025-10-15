@@ -126,6 +126,7 @@ int main(void)
   remote_init();
   remote_xport_init();
   zentrale_init();
+  gb_init();
   mio_init();
   mcp_init();
   apc_init();

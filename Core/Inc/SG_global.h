@@ -43,6 +43,7 @@
 #define SG_ERR_DIAG_OUT	21
 
 #define SG_ERR_TC_SETPOINT_TIMEOUT	22
+#define SG_ERR_RFG	23
 
 
 #define SG_ERR_CHNMASK      0x000F0000

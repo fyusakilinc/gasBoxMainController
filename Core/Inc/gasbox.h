@@ -1,5 +1,6 @@
 #include <stdint.h>
 
+void gb_init(void);
 void gb_sero_get(void);
 
 // one parsed reply

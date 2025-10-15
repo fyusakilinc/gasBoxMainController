@@ -189,21 +189,7 @@ void parse_ascii_xport(void) {
 			uint16_t cmd_id = ASCII_CMD_MAX;
 			Binary_Search(ASCII_CMD_MAX, cmd, &cmd_id);
 
-#ifdef RFG_PASSTHRU
-			if (cmd_id >= CMD_MIN_RFG && cmd_id <= CMD_MAX_RFG) {
-				uint16_t line_len = (uint16_t) (ptr - line_start);
-				// Forward the *raw* line the PC sent (what you buffered this tick)
-				if (rf_cmd_is_on(cmd, vbuf, pflag) && (atm_sensor_get() || door_switch_get())) {
-					line_start = ptr;
-					ap_reset_state(cmd, &cmd_len, vbuf, &vlen, &pflag, &eflag, &a_state);
-					break;
-				}
-				rfg_forward_line((const uint8_t *)&msg[line_start], line_len);
-				ap_reset_state(cmd, &cmd_len, vbuf, &vlen, &pflag, &eflag, &a_state);
-				line_start = ptr;
-				break;
-			}
-#endif
+// RFG_PASSTHRU bridge removed - RFG commands now go through z_cmd_sero()
 
 			// 2) build stack item (READ if no value, WRITE if value present & valid)
 			stack_item si = { 0 };

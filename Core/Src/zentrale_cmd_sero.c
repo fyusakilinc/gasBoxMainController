@@ -98,22 +98,34 @@ void z_cmd_sero(stack_item cmd) {
 	// MFC1..MFC4 SET
 	case CMD_SET_GAS_PDE: {
 		uint16_t p = clamp16((uint16_t) cmd.par0);
-		cmd.cmd_ack = z_mfc_set(0, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		if (!atm_sensor_get())
+			cmd.cmd_ack = z_mfc_set(0, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		else
+			cmd.cmd_ack = CMR_COMMANDDENIED; // these can be changed, we can add cmr_safety_denied or something like that
 		break;
 	}
 	case CMD_SET_GAS_AIR: {
 		uint16_t p = clamp16((uint16_t) cmd.par0);
-		cmd.cmd_ack = z_mfc_set(1, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		if (!atm_sensor_get())
+			cmd.cmd_ack = z_mfc_set(1, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		else
+			cmd.cmd_ack = CMR_COMMANDDENIED;
 		break;
 	}
 	case CMD_SET_GAS_O2: {
 		uint16_t p = clamp16((uint16_t) cmd.par0);
-		cmd.cmd_ack = z_mfc_set(2, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		if (!atm_sensor_get())
+			cmd.cmd_ack = z_mfc_set(2, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		else
+			cmd.cmd_ack = CMR_COMMANDDENIED;
 		break;
 	}
 	case CMD_SET_GAS_4: {
 		uint16_t p = clamp16((uint16_t) cmd.par0);
-		cmd.cmd_ack = z_mfc_set(3, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		if (!atm_sensor_get())
+			cmd.cmd_ack = z_mfc_set(3, p) ? CMR_SUCCESSFULL : CMR_COMMANDDENIED;
+		else
+			cmd.cmd_ack = CMR_COMMANDDENIED;
 		break;
 	}
 
@@ -170,7 +182,8 @@ void z_cmd_sero(stack_item cmd) {
 		uint16_t p = (uint16_t) cmd.par0;
 		uint8_t ret;
 		if (p) {
-			ret = z_valve_open(3);
+			if (!(iso_valve_get() || door_switch_get()))
+				ret = z_valve_open(3);
 		} else {
 			ret = z_valve_close(3);
 		}
@@ -192,8 +205,12 @@ void z_cmd_sero(stack_item cmd) {
 	case CMD_V4_SET: {
 		uint16_t p = (uint16_t) cmd.par0;
 		uint8_t ret;
+		uint16_t st; // v4 cant be opened when atm, door switch active, and v3 is open
+		z_valve_get(3, &st);
+
 		if (p) {
-			ret = z_valve_open(4);
+			if (!(st || atm_sensor_get() || door_switch_get()))
+				ret = z_valve_open(4);
 		} else {
 			ret = z_valve_close(4);
 		}
@@ -256,10 +273,14 @@ void z_cmd_sero(stack_item cmd) {
 
 	// -----------
 
-	case CMD_SET_T: {// assume temperature values are 10 times the wanted values. so 120 means 12.0 C here to be able to use floats
+	case CMD_SET_T: {
 		float v = cmd.par0;
-		set_TC_STP(v);
-		cmd.cmd_ack = CMR_SUCCESSFULL;
+		if (v >= 120)
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		else {
+			set_TC_STP(v);
+			cmd.cmd_ack = CMR_SUCCESSFULL;
+		}
 		break;
 	}
 
@@ -356,7 +377,7 @@ void z_cmd_sero(stack_item cmd) {
 	case CMD_APC_POS_RD: {
 		double v;                                      // local storage
 		if (apc_get_pos(&v)) {
-			cmd.par0 = (float) v*10;                           // always an int here so, multiply it with 10 to get 1 decimal point
+			cmd.par0 = (float) v;
 			cmd.cmd_ack = CMR_SUCCESSFULL;
 		} else {
 			cmd.cmd_ack = CMR_COMMANDDENIED;
@@ -502,8 +523,18 @@ void z_cmd_sero(stack_item cmd) {
 // -----------
 
 	case CMD_ISO_V1: {
-		iso_valve_set((uint8_t) cmd.par0);
-		cmd.cmd_ack = CMR_SUCCESSFULL;
+		uint16_t state;	double pos; uint8_t pos70;
+		z_valve_get(3, &state);
+		apc_get_pos(&pos);
+		if (pos >= 70)
+			pos70 = 1;
+		else
+			pos70 = 0;
+		if (!(state || atm_sensor_get() || pos70)) {
+			iso_valve_set((uint8_t) cmd.par0);
+			cmd.cmd_ack = CMR_COMMANDDENIED;
+		} else
+			cmd.cmd_ack = CMR_SUCCESSFULL;
 		break;
 	}
 

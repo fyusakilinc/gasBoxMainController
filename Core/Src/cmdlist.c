@@ -34,8 +34,8 @@ static const Cmdline_Item ASCIICmdTable[] = {
 		{"GAS:O2:STA?",	CMD_STAT_GAS_O2 },
 		{"GAS:MFC4", 	CMD_SET_GAS_4 },
 		{"GAS:MFC4?",	CMD_GET_GAS_4 },
-		{"GAS:MFC4:CLS",CMD_CLOSE_GAS_4 },
-		{"GAS:MFC4:STA?",CMD_STAT_GAS_4 },
+		{"GAS:MFC4:CLS",	CMD_CLOSE_GAS_4 },
+		{"GAS:MFC4:STA?",	CMD_STAT_GAS_4 },
 		{"PUM", 		CMD_PUMP_SET },   // usage: "PUM 1;" or "PUM 0;"
 		{"PUM?", 		CMD_PUMP_GET },   // returns 0/1 (running)
 		{"PUM:STA?", 	CMD_PUMP_GET_STA }, // MP start/running status (DI)

@@ -11,6 +11,7 @@
 #include "zentrale.h"
 #include "cmdlist.h"
 #include "SG_global.h"
+#include "iso.h"
 
 // ---- framing ----
 #define TOKEN_LENGTH_MAX  32
@@ -83,6 +84,7 @@ void parse_ascii(void) {
 	volatile static uint8_t a_state = S_WAIT_CMD;
 	volatile static uint8_t pflag = 0;
 	volatile static uint8_t eflag = 0;
+	static uint16_t line_start = 0;
 
 	uint8_t ptr = 0;
 
@@ -109,6 +111,7 @@ void parse_ascii(void) {
 			if (nc == ' ' || nc == '\t' || nc == '\r' || nc == '\n')
 				break;
 			// start command token
+			line_start = (uint16_t)(ptr - 1);
 			cmd_len = 0;
 			if (cmd_len < TOKEN_LENGTH_MAX - 1) {
 				cmd[cmd_len++] = (char) nc;
@@ -188,11 +191,17 @@ void parse_ascii(void) {
 
 #ifdef RFG_PASSTHRU
 			if (cmd_id >= CMD_MIN_RFG && cmd_id <= CMD_MAX_RFG) {
-			    // Forward the *raw* line the PC sent (what you buffered this tick)
-			    rfg_forward_line(msg, nzeichen);
-			    ap_reset_state(cmd, &cmd_len, vbuf, &vlen, &pflag, &eflag, &a_state);
-			    // Do NOT enqueue a stack item; just return to main loop
-			    return;
+				uint16_t line_len = (uint16_t) (ptr - line_start);
+				// Forward the *raw* line the PC sent (what you buffered this tick)
+				if (rf_cmd_is_on(cmd, vbuf, pflag) && (atm_sensor_get() || door_switch_get())) {
+					line_start = ptr;
+					ap_reset_state(cmd, &cmd_len, vbuf, &vlen, &pflag, &eflag, &a_state);
+					break;
+				}
+				rfg_forward_line((const uint8_t *)&msg[line_start], line_len);
+				ap_reset_state(cmd, &cmd_len, vbuf, &vlen, &pflag, &eflag, &a_state);
+				line_start = ptr;
+				break;
 			}
 #endif
 

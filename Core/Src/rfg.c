@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "rfg.h"
 #include "uart4.h"
 #include "usart.h"
@@ -46,11 +47,25 @@ void rfg_sero_get(void) {
 }
 
 #ifdef RFG_PASSTHRU
-void rfg_forward_line(volatile uint8_t *line, int len) {
-	if (len != 0) {
-		uartRB_Put(&uart4_rb, (const char*) line, len); // is this assignment correct? TODO!
-		uartRB_KickTx(&uart4_rb);
+void rfg_forward_line(const uint8_t *buf, int len) {
+	// raw forward; do NOT touch CR/LF
+	const uint8_t *p = buf;
+	while (len) {
+		uint8_t chunk = (len > 255) ? 255 : (uint8_t) len;
+		(void) uartRB_Put(&uart4_rb, (const char*) p, chunk);
+		p += chunk;
+		len -= chunk;
 	}
+	uartRB_KickTx(&uart4_rb);
 }
 #endif
+
+uint8_t rf_cmd_is_on(const char *cmd, const char *vbuf, uint8_t pflag){
+    if (strcasecmp(cmd, "RF ON") == 0) return 1;
+    if (pflag && strncasecmp(cmd, "RF", 2) == 0) {
+        char *ep = NULL; double v = strtod(vbuf, &ep);
+        if (ep != vbuf && v > 0.5) return 1;
+    }
+    return 0;
+}
 

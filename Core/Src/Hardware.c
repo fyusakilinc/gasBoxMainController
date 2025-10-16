@@ -1,8 +1,11 @@
+
 #include "main.h"
 #include "Hardware.h"
 #include "zentrale.h"
 #include "timer0.h"
+#include "iso.h"
 #include "SG_global.h"
+#include "uart4.h"
 #include <stdbool.h>
 
 
@@ -15,6 +18,7 @@
 
 uint8_t u_ok(GPIO_TypeDef *port, uint16_t pin);
 uint8_t update_uok(void);
+volatile uint8_t g_ready_should_blink = 0;
 
 // Initialisierung der Hardware
 void hw_init(void)
@@ -57,10 +61,18 @@ void hw_sero_get(void) {
 
 // Serviceroutine Hadware Set
 // Verwaltet die Heartbeat LED
-void hw_sero_set(void)
-{	if (ct_hbeat_null()==1)
-	 { set_ct_hbeat(500);
-	 HAL_GPIO_TogglePin(UC_HEARTBEAT_GPIO_Port, UC_HEARTBEAT_Pin);
+void hw_sero_set(void) {
+	if (ct_hbeat_null() == 1) {
+		set_ct_hbeat(500);
+		HAL_GPIO_TogglePin(UC_HEARTBEAT_GPIO_Port, UC_HEARTBEAT_Pin);
+
+		if (g_ready_should_blink) {
+			static uint8_t on = 0;
+			on ^= 1u;
+			ledbereit_set(on);           // blink when NOT ready
+		} else {
+			ledbereit_set(1);            // hold solid when ready
+		}
 	}
 }
 
@@ -90,7 +102,14 @@ void setStartPump(void) {
 
 void setStopPump(void) {
 	if (readPumpRemote() == GPIO_PIN_RESET)
-		HAL_GPIO_WritePin(UC_PUMP_STOP_GPIO_Port, UC_PUMP_STOP_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(UC_PUMP_START_GPIO_Port, UC_PUMP_START_Pin, GPIO_PIN_RESET);
+}
+
+GPIO_PinState readPumpStatus(void) {
+	GPIO_PinState status = 0;
+	if (readPumpRemote() == GPIO_PIN_RESET)
+		status = HAL_GPIO_ReadPin(UC_PUMP_STATUS_GPIO_Port, UC_PUMP_STATUS_Pin);
+	return status;
 }
 
 // these two functions might just need a pulse
@@ -120,6 +139,33 @@ void hw_xport_reset_disable(uint8_t val) {
         HAL_GPIO_WritePin(XPORT_RESET_GPIO_Port, XPORT_RESET_Pin, 0);
 }
 
+
+void system_powerup_ready_light(void)
+{
+    // 1) all UART devices ok?
+    uint8_t comms_ok = uart_ok(usart1_rb.huart) && uart_ok(usart2_rb.huart) && uart_ok(usart3_rb.huart) && uart_ok(uart4_rb.huart) && uart_ok(uart5_rb.huart);
+
+    // 2) pressurized air ok? (iso input bit 6 == 1)
+    uint8_t air_ok = air_sensor_get() ? 1u : 0u;
+
+    // 3) pump running? (GPIO == SET)
+    uint8_t pump_ok = (readPumpStatus() == GPIO_PIN_SET) ? 1u : 0u;
+
+    if (pump_ok){
+    	ledpumpe_set(1);
+    }
+    else
+    	ledpumpe_set(0);
+
+	if (comms_ok && air_ok && pump_ok) {
+		g_ready_should_blink = 0;
+		ledbereit_set(1);        // solid green
+	} else {
+		g_ready_should_blink = 1; // let the heartbeat blink it
+		ledbereit_set(0);        // start from OFF so blink is visible
+	}
+
+}
 
 
 

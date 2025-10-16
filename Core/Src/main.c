@@ -134,8 +134,8 @@ int main(void)
   rfg_init();
   hw_xport_reset_disable(1);
 
-
   delay_ms(500);
+  system_powerup_ready_light();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -145,6 +145,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  	//system_powerup_ready_light();
 		hw_sero_get();
 		remote_sero_get();
 		remote_xport_sero_get();

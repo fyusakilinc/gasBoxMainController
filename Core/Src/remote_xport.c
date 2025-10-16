@@ -84,7 +84,6 @@ void parse_ascii_xport(void) {
 	volatile static uint8_t a_state = S_WAIT_CMD;
 	volatile static uint8_t pflag = 0;
 	volatile static uint8_t eflag = 0;
-	static uint16_t line_start = 0;
 
 	uint8_t ptr = 0;
 
@@ -111,7 +110,6 @@ void parse_ascii_xport(void) {
 			if (nc == ' ' || nc == '\t' || nc == '\r' || nc == '\n')
 				break;
 			// start command token
-			line_start = (uint16_t)(ptr - 1);
 			cmd_len = 0;
 			if (cmd_len < TOKEN_LENGTH_MAX - 1) {
 				cmd[cmd_len++] = (char) nc;

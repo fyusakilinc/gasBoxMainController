@@ -193,3 +193,13 @@ uint8_t uartRB_Getc(UartRB *p) {
 	HAL_NVIC_EnableIRQ(p->irqn);
 	return c;
 }
+
+uint8_t uart_ok(UART_HandleTypeDef *huart)
+{
+    if (huart == NULL) return 0;
+    // Not in reset/error state
+    if (HAL_UART_GetState(huart) == HAL_UART_STATE_RESET) return 0;
+    // No sticky HW error
+    if (HAL_UART_GetError(huart) != HAL_UART_ERROR_NONE)  return 0;
+    return 1;
+}

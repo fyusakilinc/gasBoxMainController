@@ -41,6 +41,7 @@ void uartRB_OnTxCplt(UartRB *p, UART_HandleTypeDef *huart);
 int16_t rb_free_tx(UartRB *p);
 int16_t rb_free_rx(UartRB *p);
 int16_t rb_rx_used(const UartRB *p);
+uint8_t uart_ok(UART_HandleTypeDef *huart);
 
 extern UartRB uart4_rb;
 extern UartRB uart5_rb;

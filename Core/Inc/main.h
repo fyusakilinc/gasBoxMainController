@@ -59,8 +59,8 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define UC_PUMP_START_Pin GPIO_PIN_2
 #define UC_PUMP_START_GPIO_Port GPIOE
-#define UC_PUMP_STOP_Pin GPIO_PIN_3
-#define UC_PUMP_STOP_GPIO_Port GPIOE
+#define UC_PUMP_STATUS_Pin GPIO_PIN_3
+#define UC_PUMP_STATUS_GPIO_Port GPIOE
 #define UC_PUMP_WARNING_Pin GPIO_PIN_4
 #define UC_PUMP_WARNING_GPIO_Port GPIOE
 #define UC_PUMP_ALARM_Pin GPIO_PIN_5

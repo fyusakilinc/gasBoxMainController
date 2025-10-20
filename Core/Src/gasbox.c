@@ -306,6 +306,7 @@ uint8_t gasbox_xfer(uint8_t cmd, uint16_t param, GbReply *out,
 	gb_sync.expect_cmd = cmd;
 	gb_sync.have = 0;
 	gb_sync.state = GB_WAIT_RX;
+	gb_sync.deadline_ms = HAL_GetTick() + timeout_ms;   // <-- missing line
 	// send the request frame
 	if (!gasbox_send(cmd, param)) {
 		gb_sync.state = GB_IDLE;

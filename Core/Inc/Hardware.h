@@ -20,3 +20,15 @@ uint8_t readPumpAlarm(void);
 uint8_t readPumpRemote(void);
 void hw_xport_reset_disable(uint8_t);
 void system_powerup_ready_light(void);
+
+
+// startup/self-test error bits
+typedef enum {
+    BOOT_ERR_APC  = 1u << 0,  // APC not responding
+    BOOT_ERR_RFG  = 1u << 1,  // RFG not responding
+    BOOT_ERR_GB   = 1u << 2,  // GasBox not responding
+    BOOT_ERR_AIR  = 1u << 3,  // Pressurized air sensor == 0
+    BOOT_ERR_PUMP = 1u << 4,  // Pump status == 0
+} boot_err_t;
+
+static volatile uint32_t g_boot_errmask = 0;

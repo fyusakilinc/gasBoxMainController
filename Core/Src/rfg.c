@@ -192,24 +192,30 @@ typedef enum { RFG_IDLE=0, RFG_WAIT_RX } RfgState;
 typedef struct {
     volatile RfgState state;
     volatile uint8_t  have;
+    volatile uint8_t  ok;         // <- NEW: 1=success, 0=error
     uint32_t          deadline_ms;
     char              reply[CMD_LENGTH_MAX];   // raw reply line
     double            value;                 // parsed numeric (if any)
+    volatile int32_t  err_code;   // <- NEW: parsed Exxx error, or 0
 } RfgSync;
 
 static RfgSync rfg_sync = {0};
 
 static void arrived(const char* line, const double *dv, uint8_t had_error)
 {
+	// default
+	rfg_sync.ok = 0;
+	rfg_sync.err_code = 0;
     // Check for error responses (Exxx; format from RFG manual)
     if (line[0] == 'E' && strlen(line) > 1) {
         // Parse error code from Exxx; format
         char *endp = NULL;
         long error_code = strtol(line + 1, &endp, 10);
         if (endp != line + 1 && error_code > 0) {
-            // Store error code in sync for rfg_xfer to return
-            rfg_sync.value = (double)error_code;
-            rfg_sync.have = 1;
+            rfg_sync.err_code = (int32_t)error_code;
+            rfg_sync.value    = -1.0;
+            rfg_sync.have     = 1;
+            rfg_sync.ok       = 0;
             return;
         }
     }
@@ -230,15 +236,18 @@ static void arrived(const char* line, const double *dv, uint8_t had_error)
         rfg_sync.reply[sizeof rfg_sync.reply - 1] = 0;
         
         // Only set success for proper success responses
-        if (strcmp(line, ";") == 0 || strncmp(line, ">OK;", 4) == 0) {
+        if (strcmp(line, ";") == 0 || strcmp(line, ";;") == 0 || strncmp(line, ">OK;", 4) == 0) {
             // Success responses: ";" or ">OK;"
             rfg_sync.value = (dv ? *dv : 0.0);
+            rfg_sync.ok    = 1;
         } else if (dv != NULL) {
             // Numeric responses (for queries like "RF?")
             rfg_sync.value = *dv;
+            rfg_sync.ok    = 1;
         } else {
             // Unknown response - treat as error
             rfg_sync.value = -1.0;  // Signal error
+            rfg_sync.ok    = 0;
         }
         rfg_sync.have = 1;
     }
@@ -302,11 +311,12 @@ uint8_t rfg_xfer(const char *s, float param, bool wr, uint32_t timeout_ms, float
 		rfg_sero_get();
 		// Check if reply arrived
 		if (rfg_sync.have) {
-			if (out)
+			uint8_t ok = rfg_sync.ok;
+			if (ok && out)
 				*out = rfg_sync.value;
-			rfg_sync.state = RFG_IDLE;
 			rfg_sync.have = 0;
-			return 1;   // success
+			rfg_sync.state = RFG_IDLE;
+			return ok;    // success
 		}
 
 		// Timeout check

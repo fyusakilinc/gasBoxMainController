@@ -157,13 +157,12 @@ int main(void)
 
 		zentrale();
 
-
+		result_get_sero();
+		z_cmd_scheduler();
 		hw_sero_set();
 		mio_sero_set();
 		mcp_sero_set();
 		apc_sero_set();
-		z_cmd_scheduler();
-		result_get_sero();
   }
   /* USER CODE END 3 */
 }

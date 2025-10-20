@@ -4,11 +4,14 @@
 #include "zentrale.h"
 #include "timer0.h"
 #include "iso.h"
+#include "rfg.h"
+#include "apc.h"
+#include "gasbox.h"
 #include "SG_global.h"
 #include "uart4.h"
 #include <stdbool.h>
-
-
+#include <string.h>
+#include <stdio.h>
 
 //-----------------PRIVATE-BEREICH---------------------------------------------
 
@@ -139,34 +142,87 @@ void hw_xport_reset_disable(uint8_t val) {
         HAL_GPIO_WritePin(XPORT_RESET_GPIO_Port, XPORT_RESET_Pin, 0);
 }
 
+uint8_t check_gasbox_init();
+uint8_t check_rfg_init();
+uint8_t check_apc_init();
+void notify_pc(uint32_t m);
 
 void system_powerup_ready_light(void)
 {
     // 1) all UART devices ok?
-    uint8_t comms_ok = uart_ok(usart1_rb.huart) && uart_ok(usart2_rb.huart) && uart_ok(usart3_rb.huart) && uart_ok(uart4_rb.huart) && uart_ok(uart5_rb.huart);
-
-    // 2) pressurized air ok? (iso input bit 6 == 1)
+	uint8_t gbinit = check_gasbox_init();
+	uint8_t rfginit = check_rfg_init();
+	uint8_t apcinit = check_apc_init();
     uint8_t air_ok = air_sensor_get() ? 1u : 0u;
-
-    // 3) pump running? (GPIO == SET)
     uint8_t pump_ok = (readPumpStatus() == GPIO_PIN_SET) ? 1u : 0u;
 
-    if (pump_ok){
-    	ledpumpe_set(1);
-    }
-    else
-    	ledpumpe_set(0);
+    //uint8_t comms_ok = apcinit && rfginit && gbinit;
+    // 3) pump running? (GPIO == SET)
 
-	if (comms_ok && air_ok && pump_ok) {
+
+    ledpumpe_set(pump_ok ? 1 : 0);  // pump LED (white)
+
+    uint32_t m = 0;
+    if (!apcinit)  m |= BOOT_ERR_APC;
+    if (!rfginit)  m |= BOOT_ERR_RFG;
+    if (!gbinit)   m |= BOOT_ERR_GB;
+    if (!air_ok)   m |= BOOT_ERR_AIR;
+    if (!pump_ok)  m |= BOOT_ERR_PUMP;
+    g_boot_errmask = m;  // publish latest state
+
+    notify_pc(g_boot_errmask);
+
+    if (m == 0) {
 		g_ready_should_blink = 0;
-		ledbereit_set(1);        // solid green
+		ledbereit_set(1);               // solid green
 	} else {
-		g_ready_should_blink = 1; // let the heartbeat blink it
-		ledbereit_set(0);        // start from OFF so blink is visible
+		g_ready_should_blink = 1;       // heartbeat will blink it
+		ledbereit_set(0);               // start from OFF so blink is visible
 	}
 
 }
 
+uint8_t check_gasbox_init() {
+	GbReply r;
+	if (!gasbox_xfer(0x01u, 0, &r, 50))
+		return 0;
+	return (r.status == 0x80);
+}
 
+uint8_t check_rfg_init() {
+	return rfg_xfer(";;", 0, 0, 50, NULL);
+}
+
+uint8_t check_apc_init() {
+	double dummy;
+	return apc_get_valv_num(&dummy);   // 200 ms is a safe default
+}
+
+static void boot_err_to_text(uint32_t m, char *buf, size_t n)
+{
+    if (!buf || n==0) return;
+    if (m == 0) { snprintf(buf, n, "OK"); return; }
+    buf[0] = 0;
+    #define APP(tag,bit) do{ if (m & (bit)) { if (buf[0]) strncat(buf,",",n-1); strncat(buf,(tag),n-1);} }while(0)
+    APP("APC",  BOOT_ERR_APC);
+    APP("RFG",  BOOT_ERR_RFG);
+    APP("GBOX", BOOT_ERR_GB);
+    APP("AIR",  BOOT_ERR_AIR);
+    APP("PUMP", BOOT_ERR_PUMP);
+    #undef APP
+}
+
+void notify_pc(uint32_t m){
+	if(m == 0)
+		return;
+	char text[64];
+	boot_err_to_text(m, text, sizeof text);
+
+	char line[96];
+	int n = snprintf(line, sizeof line, "EVT:BOOT %s;", text);
+	if (n > 0) {
+		uartRB_Puts(&usart2_rb, line);
+	}
+}
 
 

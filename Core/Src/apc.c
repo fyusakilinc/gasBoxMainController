@@ -33,6 +33,7 @@
 // system
 #define P_ID_ACC_MODE			0x0F0B0000		// for choosing local or remote, 0 local, 1 remote, 2 remote locked
 #define P_ID_CONTROL_MODE		0x0F020000  	// Control Mode (2=Pos, 4=Open, 5=Pressure)
+#define P_ID_VALV_NUM			0x0F100201
 #define P_ID_ERR_RECOVER		0x0F506600 		// bool, attempts to fix the error without restart
 #define P_ID_RES_CTLR			0x0F500100		// bool, Emulates a power cycle
 #define P_ID_ERR_NUM			0x0F300600		// UINT16, get error number
@@ -245,6 +246,17 @@ static int apc_parse_p_value_u16(const char *line, uint32_t expect_param,
 //  ----- commands -----
 
 //  ----- SYSTEM -----
+
+uint8_t apc_get_valv_num(double *out) {
+	char line[64];
+	uint16_t u = 0;
+	if (!apc_p_get(P_ID_VALV_NUM, line, sizeof(line)))
+		return 0;
+	if (!apc_parse_p_value_u16(line, P_ID_VALV_NUM, &u))
+		return 0;
+	*out = (double) u;
+	return 1;
+}
 
 uint8_t apc_set_acc_mode(double v) {
 	return apc_p_set_u32_from_double(P_ID_ACC_MODE, v) ? 1 : 0;

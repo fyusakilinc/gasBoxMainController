@@ -134,8 +134,10 @@ int main(void)
   rfg_init();
   hw_xport_reset_disable(1);
 
-  delay_ms(500);
-  system_powerup_ready_light();
+  HAL_Delay(500);
+  while(!system_powerup_ready_light()){
+	  HAL_Delay(1000);
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */

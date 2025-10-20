@@ -147,7 +147,7 @@ uint8_t check_rfg_init();
 uint8_t check_apc_init();
 void notify_pc(uint32_t m);
 
-void system_powerup_ready_light(void)
+uint8_t system_powerup_ready_light(void)
 {
     // 1) all UART devices ok?
 	uint8_t gbinit = check_gasbox_init();
@@ -180,6 +180,7 @@ void system_powerup_ready_light(void)
 		ledbereit_set(0);               // start from OFF so blink is visible
 	}
 
+    return (m == 0);
 }
 
 uint8_t check_gasbox_init() {

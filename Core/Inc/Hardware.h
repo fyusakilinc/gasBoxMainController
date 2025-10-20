@@ -19,7 +19,7 @@ uint8_t readPumpWarning(void);
 uint8_t readPumpAlarm(void);
 uint8_t readPumpRemote(void);
 void hw_xport_reset_disable(uint8_t);
-void system_powerup_ready_light(void);
+uint8_t system_powerup_ready_light(void);
 
 
 // startup/self-test error bits

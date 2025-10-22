@@ -1,7 +1,7 @@
 #include "unity.h"
 #include "functions.h"
 #include <string.h>
-
+#include <SG_global.h>
 
 /* ------------------ Unity hooks ------------------ */
 void setUp(void) {}
@@ -56,9 +56,31 @@ void test_parser(void){
 
 }
 
+void test_binsearch_found(void) {
+    uint16_t out = 0;
+    Binary_Search(190, "GAS:V3", &out);
+    TEST_ASSERT_EQUAL_UINT16(1, out);
+}
+
+void test_parse_ascii_write_ok(void) {
+    ascii_parse_result_t r;
+    parse_ascii_test_feed("\n\rGAS:V3 12.5;\n\r");
+
+    TEST_ASSERT_TRUE(parse_ascii_test_get(&r));
+    TEST_ASSERT_EQUAL_STRING("GAS:V3", r.cmd);
+    TEST_ASSERT_EQUAL_UINT8(1, r.has_value);
+    TEST_ASSERT_FLOAT_WITHIN(1e-3f, 12.5f, r.value);
+    TEST_ASSERT_EQUAL_UINT16(1, r.cmd_index);   // via test_resolver
+    TEST_ASSERT_EQUAL_UINT8(WRITE, r.rwflg);     // whatever your enum is
+}
+
 int main(void) {
 	UNITY_BEGIN();
 	RUN_TEST(test_gasbox_frame_simple);
 	RUN_TEST(test_parser);
+	RUN_TEST(test_binsearch_found);
+	RUN_TEST(test_parse_ascii_write_ok);
 	return UNITY_END();
 }
+
+

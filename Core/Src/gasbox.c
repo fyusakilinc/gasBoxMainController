@@ -198,7 +198,7 @@ static void parse_binary_gasbox(void) {
 		}
 			break;
 		}
-	} while (ptr < nzeichen);
+	} while (ptr <= nzeichen); // from the unit tests, lets be safe and finish in single iteration
 }
 
 
@@ -255,7 +255,7 @@ void gb_on_frame(uint8_t cmd, uint8_t status, uint16_t value) {
 		gb_sync.r.value = value;
 		gb_sync.have = 1;
 	}
-	// else: unsolicited → raise events / z_set_error(...) as you like
+	// else: unsolicited → raise events / z_set_error
 }
 
 // returns 1 if started, 0 if busy or TX fai
@@ -305,11 +305,11 @@ uint8_t gasbox_xfer(uint8_t cmd, uint16_t param, GbReply *out,
 	// set up sync mailbox
 	gb_sync.expect_cmd = cmd;
 	gb_sync.have = 0;
-	gb_sync.state = GB_WAIT_RX;
+	gb_sync.state = GB_IDLE;
 	gb_sync.deadline_ms = HAL_GetTick() + timeout_ms;   // <-- missing line
 	// send the request frame
 	if (!gasbox_send(cmd, param)) {
-		gb_sync.state = GB_IDLE;
+		gb_sync.state = GB_WAIT_RX;
 		return 0;
 	}
 

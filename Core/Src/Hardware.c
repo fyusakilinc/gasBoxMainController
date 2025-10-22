@@ -153,7 +153,7 @@ uint8_t system_powerup_ready_light(void)
 	uint8_t gbinit = check_gasbox_init();
 	uint8_t rfginit = check_rfg_init();
 	uint8_t apcinit = check_apc_init();
-    uint8_t air_ok = air_sensor_get() ? 1u : 0u;
+    uint8_t air_ok = air_sensor_get() ? 1u : 0u; // to just see the heartbeat pls comment these out and make them 1
     uint8_t pump_ok = (readPumpStatus() == GPIO_PIN_SET) ? 1u : 0u;
 
     //uint8_t comms_ok = apcinit && rfginit && gbinit;

@@ -34,7 +34,7 @@ static const MfcWire kMfc[4] = {
     { GB_CMD_SET_MFC4, GB_CMD_GET_MFC4, GB_CMD_CLOSE_MFC4 },
 };
 
-#define GB_TIMEOUT_MS 2
+#define GB_TIMEOUT_MS 20
 
 
 // Zentrale initialisieren.

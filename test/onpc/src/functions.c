@@ -5,6 +5,7 @@
 #include "SG_global.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "test_log.h"
 
 #define TOKEN_LENGTH_MAX  32
 typedef enum {
@@ -73,22 +74,22 @@ uint8_t parse_binary_gasbox_test(const uint8_t *msg, uint8_t nzeichen,
 	do {
 		switch (state) {
 		case RMT_WAIT_FOR_PAKET_START: {
-			printf("pointer = %d\n",ptr);
-			printf("arrived wait\n");
+			test_logf("pointer = %d\n",ptr);
+			test_logf("arrived wait\n");
 			// scan for DLE 'S'
 			while (ptr < nzeichen) {
 				data = msg[ptr++];
-				printf("pointer = %d\n",ptr);
+				test_logf("pointer = %d\n",ptr);
 				if (dleFlag) {
 					// second control char after DLE
 					if (data == GB_DLE) {
-						printf("data = gb_dle, pointer = %d\n",ptr);
+						test_logf("data = gb_dle, pointer = %d\n",ptr);
 						// interpret as literal DLE
 						dleFlag = 0;
 						// (no payload yet in WAIT state)
 					} else if (data == GB_SOT) {
-						printf("data = gb_sot, pointer = %d\n",ptr);
-						printf("len=%u byte=%02X\n", lengthRx, data);
+						test_logf("data = gb_sot, pointer = %d\n",ptr);
+						test_logf("len=%u byte=%02X\n", lengthRx, data);
 						// start of frame
 						lengthRx = 0;
 						checksum = 0;
@@ -96,13 +97,13 @@ uint8_t parse_binary_gasbox_test(const uint8_t *msg, uint8_t nzeichen,
 						state = RMT_READ_PAKET;
 						break;
 					} else {
-						printf("data = else, pointer = %d\n",ptr);
+						test_logf("data = else, pointer = %d\n",ptr);
 						// other control -> ignore, keep scanning
 						dleFlag = 0;
 					}
 				} else {
 					if (data == GB_DLE){
-						printf("data = gb_dle, pointer = %d\n",ptr);
+						test_logf("data = gb_dle, pointer = %d\n",ptr);
 						dleFlag = 1;}
 				}
 			}
@@ -110,7 +111,7 @@ uint8_t parse_binary_gasbox_test(const uint8_t *msg, uint8_t nzeichen,
 			break;
 
 		case RMT_READ_PAKET: {
-			printf("arrived read\n");
+			test_logf("arrived read\n");
 			while (ptr < nzeichen) {
 				data = msg[ptr++];
 
@@ -123,15 +124,15 @@ uint8_t parse_binary_gasbox_test(const uint8_t *msg, uint8_t nzeichen,
 
 				if (dleFlag) {
 					if (data == GB_DLE) {
-						printf("data = gb_dle, pointer = %d\n",ptr);
-						printf("len=%u byte=%02X\n", lengthRx, data);
+						test_logf("data = gb_dle, pointer = %d\n",ptr);
+						test_logf("len=%u byte=%02X\n", lengthRx, data);
 						// stuffed DLE as data
 						dleFlag = 0;
 						bufferRx[lengthRx++] = GB_DLE;
 						checksum += GB_DLE;
 					} else if (data == GB_SOT) {
-						printf("data = gb_sot, pointer = %d\n",ptr);
-						printf("len=%u byte=%02X\n", lengthRx, data);
+						test_logf("data = gb_sot, pointer = %d\n",ptr);
+						test_logf("len=%u byte=%02X\n", lengthRx, data);
 						// unexpected new start → restart frame
 						lengthRx = 0;
 						checksum = 0;
@@ -139,8 +140,8 @@ uint8_t parse_binary_gasbox_test(const uint8_t *msg, uint8_t nzeichen,
 						state = RMT_READ_PAKET;
 						break;
 					} else if (data == GB_EOT) {
-						printf("data = gb_eot, pointer = %d\n",ptr);
-						printf("len=%u byte=%02X\n", lengthRx, data);
+						test_logf("data = gb_eot, pointer = %d\n",ptr);
+						test_logf("len=%u byte=%02X\n", lengthRx, data);
 						// proper trailer -> parse
 						state = RMT_PARSE_PAKET;
 						dleFlag = 0;
@@ -152,7 +153,7 @@ uint8_t parse_binary_gasbox_test(const uint8_t *msg, uint8_t nzeichen,
 					if (data == GB_DLE) {
 						dleFlag = 1;            // next is control
 					} else {
-						printf("len=%u byte=%02X, pointer = %d\n", lengthRx, data, ptr);
+						test_logf("len=%u byte=%02X, pointer = %d\n", lengthRx, data, ptr);
 						bufferRx[lengthRx++] = data;
 						checksum += data;
 					}
@@ -162,7 +163,7 @@ uint8_t parse_binary_gasbox_test(const uint8_t *msg, uint8_t nzeichen,
 			break;
 
 		case RMT_PARSE_PAKET: {
-			printf("arrived parse, pointer = %d\n",ptr);
+			test_logf("arrived parse, pointer = %d\n",ptr);
 			// Expect 4 payload bytes + 1 checksum (net length 5)
 			if (lengthRx == 5) {
 				uint8_t cmd = bufferRx[0];
@@ -225,7 +226,7 @@ int parse_ascii_test_get(ascii_parse_result_t *out) {
 
 
 void parse_ascii_test(void) {
-	printf("arrived at parser\n");
+	test_logf("arrived at parser\n");
 	static char cmd[CMD_LENGTH_MAX+1] ="\0";
 	static uint8_t cmd_len = 0;
 
@@ -259,8 +260,8 @@ void parse_ascii_test(void) {
 
 		switch (a_state) {
 		case S_WAIT_CMD:
-			printf("arrived at wait\n");
-			printf("nc value = %d\n", nc);
+			test_logf("arrived at wait\n");
+			test_logf("nc value = %d\n", nc);
 			// skip leading spaces, CR/LF
 			if (nc == ' ' || nc == '\t' || nc == '\r' || nc == '\n')
 				break;
@@ -274,8 +275,8 @@ void parse_ascii_test(void) {
 			break;
 
 		case S_GET_CMD:
-			printf("arrived at get\n");
-			printf("nc value = %d\n", nc);
+			test_logf("arrived at get\n");
+			test_logf("nc value = %d\n", nc);
 			if (nc == ';' || nc == '\r' || nc == '\n') {
 				a_state = S_PROC_CMD;  // READ (no value)
 				break;
@@ -294,8 +295,8 @@ void parse_ascii_test(void) {
 			break;
 
 		case S_GET_SIGN_OR_DIGIT:
-			printf("arrived at sign\n");
-			printf("nc value = %d\n", nc);
+			test_logf("arrived at sign\n");
+			test_logf("nc value = %d\n", nc);
 			if (nc == ';' || nc == '\r' || nc == '\n') {
 				a_state = S_PROC_CMD;
 				break;
@@ -319,8 +320,8 @@ void parse_ascii_test(void) {
 			break;
 
 		case S_GET_VAL:
-			printf("arrived at get val\n");
-			printf("nc value = %d\n", nc);
+			test_logf("arrived at get val\n");
+			test_logf("nc value = %d\n", nc);
 			if (nc == ';' || nc == '\r' || nc == '\n') {
 				a_state = S_PROC_CMD;
 				break;
@@ -345,8 +346,8 @@ void parse_ascii_test(void) {
 
 		case S_PROC_CMD: {
 			// 1) resolve command
-			printf("arrived at proc val\n");
-			printf("nc value = %d\n", nc);
+			test_logf("arrived at proc val\n");
+			test_logf("nc value = %d\n", nc);
 			uint16_t cmd_id = ASCII_CMD_MAX;
 			Binary_Search(ASCII_CMD_MAX, cmd, &cmd_id);
 
@@ -368,9 +369,9 @@ void parse_ascii_test(void) {
 			} else {
 				si.par0 = 0.0f;
 			}
-			printf("error flag = %d \n",eflag);
-			printf("cmd id = %d \n",cmd_id);
-			printf("[ascii] CMD token = %s, param value = %F\n", cmd, si.par0);
+			test_logf("error flag = %d \n",eflag);
+			test_logf("cmd id = %d \n",cmd_id);
+			test_logf("[ascii] CMD token = %s, param value = %F\n", cmd, si.par0);
 			// 3) enqueue or report error
 			if (eflag || cmd_id >= ASCII_CMD_MAX) {
 				// optional: your error reporting

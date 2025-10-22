@@ -1,6 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ -t 1 ]]; then
+  COLOR_BLUE=$'\033[1;34m'
+  COLOR_GREEN=$'\033[1;32m'
+  COLOR_RED=$'\033[1;31m'
+  COLOR_RESET=$'\033[0m'
+else
+  COLOR_BLUE=''
+  COLOR_GREEN=''
+  COLOR_RED=''
+  COLOR_RESET=''
+fi
+
+section() {
+  printf '\n%s==>%s %s\n' "$COLOR_BLUE" "$COLOR_RESET" "$1"
+}
+
+success() {
+  printf '\n%s✔%s %s\n' "$COLOR_GREEN" "$COLOR_RESET" "$1"
+}
+
+failure() {
+  printf '\n%s✖%s %s\n' "$COLOR_RED" "$COLOR_RESET" "$1" >&2
+}
+
+trap 'rc=$?; if [[ $rc -ne 0 ]]; then failure "Test run failed (exit ${rc})"; fi' EXIT
+
 # Resolve repo root from this script’s directory (so we don’t rely on UNC ROOT)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # If build_and_run.sh is in test/, ROOT is one dir up.
@@ -32,9 +58,11 @@ for d in "$UNITY_INC_DIR" "$TEST_INC"; do
   [[ -d "$d" ]] || { echo "Missing include dir: $d" >&2; exit 1; }
 done
 
+section "Preparing build directory"
 mkdir -p "$OUT_DIR"
 
 # Build (host build, no HAL)
+section "Building host Unity test binary"
 gcc -Wall -Wextra -Werror -Wshadow -O0 -g -std=c11 \
   "$UNITY_C" "$TEST_MAIN" "$TEST_FUNCS" "$TEST_RFG" \
   "$CMD_INC" "$PRIO_LIST_SRC" "$PRIO_PUSHPOP_SRC" \
@@ -42,4 +70,7 @@ gcc -Wall -Wextra -Werror -Wshadow -O0 -g -std=c11 \
   -o "$OUT_BIN"
 
 # Run tests
+section "Running host Unity tests"
 "$OUT_BIN"
+
+success "All host Unity tests passed"

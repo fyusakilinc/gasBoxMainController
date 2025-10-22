@@ -20,9 +20,12 @@ TEST_RFG="$ROOT/test/onpc/src/rfg_test.c"
 TEST_INC="$ROOT/test/onpc/inc"
 CORE_INC="$ROOT/Core/Inc"   # include if your test headers reference project headers
 CMD_INC="$ROOT/Core/Src/cmdlist.c"
+PRIO_LIST_SRC="$ROOT/Core/Src/prioritylist.c"
+PRIO_PUSHPOP_SRC="$ROOT/Core/Src/priority_pushpop.c"
 
 # Sanity checks to fail early with a clear message
-for f in "$UNITY_C" "$TEST_MAIN" "$TEST_FUNCS" "$TEST_RFG"; do
+for f in "$UNITY_C" "$TEST_MAIN" "$TEST_FUNCS" "$TEST_RFG" \
+         "$CMD_INC" "$PRIO_LIST_SRC" "$PRIO_PUSHPOP_SRC"; do
   [[ -f "$f" ]] || { echo "Missing file: $f" >&2; exit 1; }
 done
 for d in "$UNITY_INC_DIR" "$TEST_INC"; do
@@ -33,7 +36,8 @@ mkdir -p "$OUT_DIR"
 
 # Build (host build, no HAL)
 gcc -Wall -Wextra -Werror -Wshadow -O0 -g -std=c11 \
-  "$UNITY_C" "$TEST_MAIN" "$TEST_FUNCS" "$TEST_RFG" "$CMD_INC" \
+  "$UNITY_C" "$TEST_MAIN" "$TEST_FUNCS" "$TEST_RFG" \
+  "$CMD_INC" "$PRIO_LIST_SRC" "$PRIO_PUSHPOP_SRC" \
   -I"$UNITY_INC_DIR" -I"$TEST_INC" -I"$CORE_INC"\
   -o "$OUT_BIN"
 
